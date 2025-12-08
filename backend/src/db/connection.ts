@@ -40,25 +40,28 @@ export const query = async (text: string, params?: any[]) => {
 // Helper function to get a client from the pool (for transactions)
 export const getClient = async () => {
   const client = await pool.connect();
-  const query = client.query.bind(client);
-  const release = client.release.bind(client);
+  const originalQuery = client.query.bind(client);
+  const originalRelease = client.release.bind(client);
 
   // Set a timeout of 5 seconds, after which we will log this client's last query
   const timeout = setTimeout(() => {
     console.error("A client has been checked out for more than 5 seconds!");
   }, 5000);
 
-  // Monkey patch the query method to log the query when a client is checked out
-  client.query = (...args: any[]) => {
-    client.lastQuery = args;
-    return query(...args);
+  // Wrap the query method to add logging
+  const wrappedQuery = (...args: Parameters<typeof originalQuery>) => {
+    return originalQuery(...args);
   };
 
+  // Override query method
+  (client as any).query = wrappedQuery;
+
+  // Override release method
   client.release = () => {
     clearTimeout(timeout);
-    client.query = query;
-    client.release = release;
-    return release();
+    client.query = originalQuery;
+    client.release = originalRelease;
+    return originalRelease();
   };
 
   return client;
