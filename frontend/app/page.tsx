@@ -98,26 +98,30 @@ export default function Home() {
         {/* Feature cards section - only shown when authenticated */}
         {isAuthenticated && (
           <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Card 1: Host Quiz feature */}
-            <div className="p-6 bg-gradient-to-br from-blue-500/20 to-cyan-500/10 rounded-lg border border-blue-400/50 hover:border-cyan-300 transition hover:shadow-lg">
-              <h2 className="text-2xl font-bold mb-2 text-blue-300">
-                Host a Quiz
-              </h2>
-              <p className="text-slate-300">
-                Create and host live quizzes for your students with real-time
-                interaction and instant feedback.
-              </p>
-            </div>
-            {/* Card 2: Join Quiz feature */}
-            <div className="p-6 bg-gradient-to-br from-cyan-500/20 to-blue-500/10 rounded-lg border border-cyan-400/50 hover:border-blue-300 transition hover:shadow-lg">
-              <h2 className="text-2xl font-bold mb-2 text-cyan-300">
-                Join a Session
-              </h2>
-              <p className="text-slate-300">
-                Join using an access code and participate in a live quiz session
-                from any device.
-              </p>
-            </div>
+            {/* Card 1: Manage Quizzes (Teachers only) */}
+            {user?.role === 'TEACHER' && (
+              <div 
+                onClick={() => router.push('/teacher/quizzes')}
+                className="p-6 bg-gradient-to-br from-blue-500/20 to-cyan-500/10 rounded-lg border border-blue-400/50 hover:border-cyan-300 transition hover:shadow-lg cursor-pointer"
+              >
+                <h2 className="text-2xl font-bold mb-2 text-blue-300">📝 Manage Quizzes</h2>
+                <p className="text-slate-300">Create, edit, and organize your quiz collection with multiple question types.</p>
+              </div>
+            )}
+            {/* Card 2: Host Quiz feature (Teachers only) */}
+            {user?.role === 'TEACHER' && (
+              <div className="p-6 bg-gradient-to-br from-purple-500/20 to-blue-500/10 rounded-lg border border-purple-400/50 hover:border-blue-300 transition hover:shadow-lg">
+                <h2 className="text-2xl font-bold mb-2 text-purple-300">🎯 Host a Quiz</h2>
+                <p className="text-slate-300">Launch live quiz sessions for your students with real-time interaction and instant feedback.</p>
+              </div>
+            )}
+            {/* Card 3: Join Quiz feature (Students) */}
+            {user?.role === 'STUDENT' && (
+              <div className="p-6 bg-gradient-to-br from-cyan-500/20 to-blue-500/10 rounded-lg border border-cyan-400/50 hover:border-blue-300 transition hover:shadow-lg">
+                <h2 className="text-2xl font-bold mb-2 text-cyan-300">🚀 Join a Session</h2>
+                  <p className="text-slate-300">Join using an access code and participate in a live quiz session from any device.</p>
+              </div>
+            )}
           </div>
         )}
 

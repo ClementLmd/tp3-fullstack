@@ -1,9 +1,6 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import ReactQueryProvider from "../lib/providers/ReactQueryProvider";
-
-const inter = Inter({ subsets: ["latin"] });
+import type { Metadata } from 'next'
+import './globals.css'
+import ReactQueryProvider from '../lib/providers/ReactQueryProvider'
 
 export const metadata: Metadata = {
   title: "Quiz Platform - Real-time Interactive Quiz",
@@ -17,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className="font-sans">
         <ReactQueryProvider>{children}</ReactQueryProvider>
       </body>
     </html>
