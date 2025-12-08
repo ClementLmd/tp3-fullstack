@@ -30,7 +30,7 @@ function validateQuestions(questions: any[]): string | null {
     }
 
     if (q.type === QuestionType.TRUE_FALSE) {
-      if (!q.correctAnswer || !['true', 'false'].includes(q.correctAnswer.toLowerCase())) {
+      if (!q.correctAnswer || typeof q.correctAnswer !== 'string' || !['true', 'false'].includes(q.correctAnswer.toLowerCase())) {
         return `Question ${i + 1}: True/False requires correctAnswer to be 'true' or 'false'.`;
       }
     }
