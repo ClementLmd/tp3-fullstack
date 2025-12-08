@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../lib/store/authStore';
@@ -10,8 +12,6 @@ type Props = {
   children: React.ReactNode;
   roles?: string[];
 };
-
-"use client";
 
 export default function AuthGuard({ children, roles }: Props) {
   const router = useRouter();
