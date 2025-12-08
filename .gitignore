@@ -20,6 +20,9 @@ out/
 .env.test.local
 .env.production.local
 
+# But keep .env.example files (they're safe to commit)
+!.env.example
+
 # IDE
 .vscode/
 .idea/

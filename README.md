@@ -19,6 +19,7 @@ tp3-fullstack/
 ### Choix Techniques
 
 #### Frontend
+
 - **Next.js 14+** avec TypeScript (App Router)
 - **Tailwind CSS** pour le styling
 - **TanStack Query** (React Query) pour la gestion des données et cache
@@ -26,6 +27,7 @@ tp3-fullstack/
 - **Socket.io-client** pour la communication WebSocket
 
 #### Backend
+
 - **Express.js** avec TypeScript
 - **Socket.io** pour les WebSockets temps réel
 - **PostgreSQL** comme base de données (avec `pg` client)
@@ -34,6 +36,7 @@ tp3-fullstack/
 - **Zod** pour la validation des schémas
 
 #### Communication Temps Réel
+
 - **Socket.io** : Choix pour sa simplicité d'utilisation, sa compatibilité avec Express, et sa gestion automatique des reconnexions et fallbacks (long-polling si WebSocket indisponible)
 
 ### Partage de Types
@@ -68,7 +71,19 @@ CREATE DATABASE quiz_platform;
 
 2. **Variables d'environnement**
 
-Créez un fichier `.env` à la racine du projet :
+Créez des fichiers `.env` séparés pour le backend et le frontend en copiant les fichiers d'exemple :
+
+```bash
+# Backend
+cp backend/.env.example backend/.env
+
+# Frontend
+cp frontend/.env.example frontend/.env.local
+```
+
+Puis modifiez les valeurs selon votre configuration locale.
+
+**`backend/.env`** :
 
 ```env
 # Database
@@ -81,11 +96,22 @@ JWT_EXPIRES_IN="7d"
 # Server
 PORT=3001
 NODE_ENV=development
+FRONTEND_URL="http://localhost:3000"
+```
 
+**`frontend/.env.local`** (Next.js charge automatiquement ce fichier) :
+
+```env
 # Frontend (Next.js)
 NEXT_PUBLIC_API_URL="http://localhost:3001"
 NEXT_PUBLIC_WS_URL="http://localhost:3001"
 ```
+
+**Note** :
+
+- Les fichiers `.env.example` sont fournis dans le repository comme modèles de référence (dans `backend/.env.example` et `frontend/.env.example`).
+- Les fichiers `.env` et `.env.local` sont dans `.gitignore` pour des raisons de sécurité. Ne les commitez jamais dans Git.
+- Modifiez les valeurs dans vos fichiers `.env` selon votre configuration locale (notamment le `DATABASE_URL` avec votre nom d'utilisateur PostgreSQL).
 
 3. **Configuration de la base de données**
 
@@ -111,17 +137,20 @@ pnpm dev
 ```
 
 Cette commande lance simultanément :
+
 - Le backend Express sur `http://localhost:3001`
 - Le frontend Next.js sur `http://localhost:3000`
 
 ### Lancer séparément
 
 **Backend uniquement :**
+
 ```bash
 pnpm dev:backend
 ```
 
 **Frontend uniquement :**
+
 ```bash
 pnpm dev:frontend
 ```
@@ -213,6 +242,7 @@ Socket.io gère automatiquement les reconnexions. Si un étudiant se déconnecte
 La documentation OpenAPI/Swagger est disponible dans le fichier `openapi.yaml` à la racine du projet.
 
 Pour accéder à la documentation interactive (si Swagger UI est configuré) :
+
 - URL: `http://localhost:3001/api-docs`
 
 ## 🧪 Tests
@@ -230,13 +260,18 @@ cd frontend && pnpm test
 ### Préparation
 
 1. Build de l'application :
+
 ```bash
 pnpm build
 ```
 
-2. Variables d'environnement de production à configurer sur le serveur
+2. Variables d'environnement de production à configurer sur le serveur :
+
+   - `backend/.env` pour les variables du backend (DATABASE_URL, JWT_SECRET, etc.)
+   - `frontend/.env.local` ou `frontend/.env.production` pour les variables du frontend (NEXT*PUBLIC*\*)
 
 3. Exécuter les migrations sur la base de données de production :
+
 ```bash
 cd backend
 pnpm db:migrate
@@ -245,6 +280,7 @@ pnpm db:migrate
 ### Déploiement Backend
 
 Le backend Express peut être déployé sur :
+
 - Heroku
 - Railway
 - Render
@@ -253,6 +289,7 @@ Le backend Express peut être déployé sur :
 ### Déploiement Frontend
 
 Le frontend Next.js peut être déployé sur :
+
 - Vercel (recommandé pour Next.js)
 - Netlify
 - VPS avec Node.js
@@ -260,12 +297,14 @@ Le frontend Next.js peut être déployé sur :
 ## 👥 Rôles et Permissions
 
 ### Enseignant (Teacher)
+
 - Créer, modifier et supprimer des quiz
 - Créer des questions (QCM, Vrai/Faux, Texte libre)
 - Lancer des sessions de quiz avec code d'accès
 - Visualiser les résultats et statistiques en temps réel
 
 ### Étudiant (Student)
+
 - Rejoindre une session via code d'accès
 - Répondre aux questions en temps réel
 - Visualiser les résultats et le classement
@@ -285,4 +324,3 @@ Ce projet est réalisé dans le cadre d'un TP scolaire.
 ## 📄 Licence
 
 Ce projet est un projet académique.
-
