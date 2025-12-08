@@ -56,6 +56,16 @@ function validateQuestions(questions: any[]): string | null {
 }
 
 /**
+ * Prepare question options for database storage
+ * Returns JSON string for MULTIPLE_CHOICE, null otherwise
+ */
+function prepareQuestionOptions(question: any): string | null {
+  return question.type === QuestionType.MULTIPLE_CHOICE 
+    ? JSON.stringify(question.options) 
+    : null;
+}
+
+/**
  * GET /api/quizzes
  * List all quizzes created by the authenticated teacher
  */
@@ -196,7 +206,7 @@ export async function createQuiz(req: AuthRequest, res: Response) {
           quizId,
           q.text,
           q.type,
-          q.type === QuestionType.MULTIPLE_CHOICE ? JSON.stringify(q.options) : null,
+          prepareQuestionOptions(q),
           q.correctAnswer || null,
           order,
           points,
@@ -309,7 +319,7 @@ export async function updateQuiz(req: AuthRequest, res: Response) {
           quizId,
           q.text,
           q.type,
-          q.type === QuestionType.MULTIPLE_CHOICE ? JSON.stringify(q.options) : null,
+          prepareQuestionOptions(q),
           q.correctAnswer || null,
           order,
           points,
