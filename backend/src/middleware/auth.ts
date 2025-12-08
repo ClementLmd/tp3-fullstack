@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, { Secret } from 'jsonwebtoken';
+import { JwtPayload, UserRole } from 'shared/src/types/auth';
 
 export interface AuthRequest extends Request {
   userId?: string;
-  userRole?: string;
+  userRole?: UserRole;
 }
 
 export const authenticateToken = (
@@ -19,20 +20,19 @@ export const authenticateToken = (
   }
 
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || 'default-secret'
-    ) as { userId: string; role: string };
+    // Cast secret to `Secret` to satisfy type definitions
+    const secret: Secret = (process.env.JWT_SECRET || 'default-secret') as unknown as Secret;
+    const decoded = jwt.verify(token, secret) as JwtPayload;
 
     req.userId = decoded.userId;
-    req.userRole = decoded.role;
+    req.userRole = decoded.role as UserRole;
     next();
   } catch (error) {
     return res.status(403).json({ error: 'Invalid or expired token' });
   }
 };
 
-export const requireRole = (roles: string[]) => {
+export const requireRole = (roles: UserRole[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.userRole || !roles.includes(req.userRole)) {
       return res.status(403).json({ error: 'Insufficient permissions' });

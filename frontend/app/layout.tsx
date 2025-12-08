@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Navbar } from "@/components/layout/Navbar";
-import { QueryProvider } from "@/lib/providers/QueryProvider";
-import { ToastProvider } from "@/lib/providers/ToastProvider";
+import ReactQueryProvider from "../lib/providers/ReactQueryProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,16 +16,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr">
+    <html lang="en">
       <body className={inter.className}>
-        <QueryProvider>
-          <ToastProvider>
-            <Navbar />
-            <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-              {children}
-            </main>
-          </ToastProvider>
-        </QueryProvider>
+        <ReactQueryProvider>{children}</ReactQueryProvider>
       </body>
     </html>
   );
