@@ -29,10 +29,18 @@ export const query = async (text: string, params?: unknown[]) => {
   try {
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
-    console.log("Executed query", { text, duration, rows: res.rowCount });
+    // Only log queries in development
+    if (process.env.NODE_ENV !== "production") {
+      console.log("Executed query", { text, duration, rows: res.rowCount });
+    }
     return res;
   } catch (error) {
-    console.error("Query error", { text, error });
+    // Always log errors, but sanitize in production
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Query error", { text, error });
+    } else {
+      console.error("Query error", { error });
+    }
     throw error;
   }
 };

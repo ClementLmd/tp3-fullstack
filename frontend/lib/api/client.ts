@@ -41,10 +41,10 @@ apiClient.interceptors.response.use(
 
     // Transform error to include user-friendly message
     const userMessage = handleApiError(error);
-    const enhancedError = {
-      ...error,
+    // Use Object.assign to preserve non-enumerable properties (response, config, status, etc.)
+    const enhancedError = Object.assign(error, {
       userMessage, // Add user-friendly message to error object
-    };
+    });
 
     return Promise.reject(enhancedError);
   }
