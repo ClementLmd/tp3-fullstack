@@ -24,7 +24,7 @@ pool.on("error", (err) => {
 });
 
 // Helper function to execute queries
-export const query = async (text: string, params?: any[]) => {
+export const query = async (text: string, params?: unknown[]) => {
   const start = Date.now();
   try {
     const res = await pool.query(text, params);
@@ -54,6 +54,7 @@ export const getClient = async () => {
   };
 
   // Override query method
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (client as any).query = wrappedQuery;
 
   // Override release method

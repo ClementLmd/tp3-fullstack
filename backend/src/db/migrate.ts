@@ -17,7 +17,7 @@ async function runMigrations() {
 
     // Get already executed migrations
     const executedMigrations = await query('SELECT name FROM migrations ORDER BY id');
-    const executedNames = executedMigrations.rows.map((row: any) => row.name);
+    const executedNames = executedMigrations.rows.map((row: { name: string }) => row.name);
 
     // Read migration files
     const files = fs.readdirSync(migrationsDir)

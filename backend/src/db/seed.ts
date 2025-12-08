@@ -7,7 +7,7 @@ async function seed() {
 
     // Create a test teacher
     const teacherPassword = await bcrypt.hash('teacher123', 10);
-    const teacherResult = await query(
+    await query(
       `INSERT INTO users (email, password, first_name, last_name, role)
        VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (email) DO NOTHING
