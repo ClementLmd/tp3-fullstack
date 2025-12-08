@@ -5,6 +5,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { pool } from "./db/connection";
 import authRoutes from './routes/auth';
+import quizRoutes from './routes/quiz';
 
 dotenv.config();
 
@@ -26,6 +27,10 @@ app.use(express.json());
 // Authentication routes mounted at /auth to separate concerns
 // Exposes: POST /auth/signup and POST /auth/login
 app.use('/auth', authRoutes);
+
+// Quiz management routes mounted at /api/quizzes
+// Requires authentication and teacher role
+app.use('/api/quizzes', quizRoutes);
 
 // Routes
 app.get("/health", (req, res) => {
