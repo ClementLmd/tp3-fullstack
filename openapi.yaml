@@ -276,6 +276,7 @@ components:
           enum: [MULTIPLE_CHOICE, TRUE_FALSE, TEXT]
         options:
           type: object
+          description: For MULTIPLE_CHOICE questions only - contains choices array and correctAnswer index
           properties:
             choices:
               type: array
@@ -283,8 +284,10 @@ components:
                 type: string
             correctAnswer:
               type: number
+              description: Index of the correct answer in the choices array
         correctAnswer:
           type: string
+          description: For TRUE_FALSE (value "true" or "false") and TEXT questions - the correct answer text
         order:
           type: number
         points:

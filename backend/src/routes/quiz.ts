@@ -12,7 +12,7 @@ import {
   deleteQuiz,
 } from '../controllers/quizController';
 import { authenticateToken, requireRole } from '../middleware/auth';
-import { UserRole } from 'shared/src/types';
+import { UserRole } from 'shared/src/types/auth';
 
 const router = Router();
 

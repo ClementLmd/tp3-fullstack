@@ -4,6 +4,58 @@ import { AuthRequest } from '../middleware/auth';
 import { Quiz, Question, QuestionType } from 'shared/src/types';
 
 /**
+ * Validate questions array
+ * Returns error message if validation fails, null if valid
+ */
+function validateQuestions(questions: any[]): string | null {
+  for (let i = 0; i < questions.length; i++) {
+    const q = questions[i];
+    
+    if (!q.text || !q.text.trim()) {
+      return `Question ${i + 1}: text is required.`;
+    }
+
+    if (!q.type || !Object.values(QuestionType).includes(q.type)) {
+      return `Question ${i + 1}: invalid type.`;
+    }
+
+    // Validate based on question type
+    if (q.type === QuestionType.MULTIPLE_CHOICE) {
+      if (!q.options || !q.options.choices || !Array.isArray(q.options.choices) || q.options.choices.length < 2) {
+        return `Question ${i + 1}: Multiple choice requires at least 2 choices.`;
+      }
+      if (typeof q.options.correctAnswer !== 'number' || q.options.correctAnswer < 0 || q.options.correctAnswer >= q.options.choices.length) {
+        return `Question ${i + 1}: Invalid correct answer index.`;
+      }
+    }
+
+    if (q.type === QuestionType.TRUE_FALSE) {
+      if (!q.correctAnswer || !['true', 'false'].includes(q.correctAnswer.toLowerCase())) {
+        return `Question ${i + 1}: True/False requires correctAnswer to be 'true' or 'false'.`;
+      }
+    }
+
+    if (q.type === QuestionType.TEXT) {
+      if (!q.correctAnswer || !q.correctAnswer.trim()) {
+        return `Question ${i + 1}: Text question requires a correct answer.`;
+      }
+    }
+
+    // Validate points
+    if (q.points !== undefined && (typeof q.points !== 'number' || q.points < 0)) {
+      return `Question ${i + 1}: Points must be a positive number.`;
+    }
+
+    // Validate time limit
+    if (q.timeLimit !== undefined && (typeof q.timeLimit !== 'number' || q.timeLimit < 0)) {
+      return `Question ${i + 1}: Time limit must be a positive number.`;
+    }
+  }
+  
+  return null;
+}
+
+/**
  * GET /api/quizzes
  * List all quizzes created by the authenticated teacher
  */
@@ -108,48 +160,9 @@ export async function createQuiz(req: AuthRequest, res: Response) {
   }
 
   // Validate questions
-  for (let i = 0; i < questions.length; i++) {
-    const q = questions[i];
-    
-    if (!q.text || !q.text.trim()) {
-      return res.status(400).json({ error: `Question ${i + 1}: text is required.` });
-    }
-
-    if (!q.type || !Object.values(QuestionType).includes(q.type)) {
-      return res.status(400).json({ error: `Question ${i + 1}: invalid type.` });
-    }
-
-    // Validate based on question type
-    if (q.type === QuestionType.MULTIPLE_CHOICE) {
-      if (!q.options || !q.options.choices || !Array.isArray(q.options.choices) || q.options.choices.length < 2) {
-        return res.status(400).json({ error: `Question ${i + 1}: Multiple choice requires at least 2 choices.` });
-      }
-      if (typeof q.options.correctAnswer !== 'number' || q.options.correctAnswer < 0 || q.options.correctAnswer >= q.options.choices.length) {
-        return res.status(400).json({ error: `Question ${i + 1}: Invalid correct answer index.` });
-      }
-    }
-
-    if (q.type === QuestionType.TRUE_FALSE) {
-      if (!q.correctAnswer || !['true', 'false'].includes(q.correctAnswer.toLowerCase())) {
-        return res.status(400).json({ error: `Question ${i + 1}: True/False requires correctAnswer to be 'true' or 'false'.` });
-      }
-    }
-
-    if (q.type === QuestionType.TEXT) {
-      if (!q.correctAnswer || !q.correctAnswer.trim()) {
-        return res.status(400).json({ error: `Question ${i + 1}: Text question requires a correct answer.` });
-      }
-    }
-
-    // Validate points
-    if (q.points !== undefined && (typeof q.points !== 'number' || q.points < 0)) {
-      return res.status(400).json({ error: `Question ${i + 1}: Points must be a positive number.` });
-    }
-
-    // Validate time limit
-    if (q.timeLimit !== undefined && (typeof q.timeLimit !== 'number' || q.timeLimit < 0)) {
-      return res.status(400).json({ error: `Question ${i + 1}: Time limit must be a positive number.` });
-    }
+  const validationError = validateQuestions(questions);
+  if (validationError) {
+    return res.status(400).json({ error: validationError });
   }
 
   const client = await getClient();
@@ -245,46 +258,10 @@ export async function updateQuiz(req: AuthRequest, res: Response) {
     return res.status(400).json({ error: 'At least one question is required.' });
   }
 
-  // Validate questions (same validation as create)
-  for (let i = 0; i < questions.length; i++) {
-    const q = questions[i];
-    
-    if (!q.text || !q.text.trim()) {
-      return res.status(400).json({ error: `Question ${i + 1}: text is required.` });
-    }
-
-    if (!q.type || !Object.values(QuestionType).includes(q.type)) {
-      return res.status(400).json({ error: `Question ${i + 1}: invalid type.` });
-    }
-
-    if (q.type === QuestionType.MULTIPLE_CHOICE) {
-      if (!q.options || !q.options.choices || !Array.isArray(q.options.choices) || q.options.choices.length < 2) {
-        return res.status(400).json({ error: `Question ${i + 1}: Multiple choice requires at least 2 choices.` });
-      }
-      if (typeof q.options.correctAnswer !== 'number' || q.options.correctAnswer < 0 || q.options.correctAnswer >= q.options.choices.length) {
-        return res.status(400).json({ error: `Question ${i + 1}: Invalid correct answer index.` });
-      }
-    }
-
-    if (q.type === QuestionType.TRUE_FALSE) {
-      if (!q.correctAnswer || !['true', 'false'].includes(q.correctAnswer.toLowerCase())) {
-        return res.status(400).json({ error: `Question ${i + 1}: True/False requires correctAnswer to be 'true' or 'false'.` });
-      }
-    }
-
-    if (q.type === QuestionType.TEXT) {
-      if (!q.correctAnswer || !q.correctAnswer.trim()) {
-        return res.status(400).json({ error: `Question ${i + 1}: Text question requires a correct answer.` });
-      }
-    }
-
-    if (q.points !== undefined && (typeof q.points !== 'number' || q.points < 0)) {
-      return res.status(400).json({ error: `Question ${i + 1}: Points must be a positive number.` });
-    }
-
-    if (q.timeLimit !== undefined && (typeof q.timeLimit !== 'number' || q.timeLimit < 0)) {
-      return res.status(400).json({ error: `Question ${i + 1}: Time limit must be a positive number.` });
-    }
+  // Validate questions
+  const validationError = validateQuestions(questions);
+  if (validationError) {
+    return res.status(400).json({ error: validationError });
   }
 
   const client = await getClient();
