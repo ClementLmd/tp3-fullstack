@@ -135,20 +135,35 @@ export default function QuizzesPage() {
                   </p>
 
                   {/* Actions */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => router.push(`/teacher/quizzes/${quiz.id}`)}
-                      className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition text-sm"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(quiz.id, quiz.title)}
-                      disabled={deletingId === quiz.id}
-                      className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-semibold hover:from-red-700 hover:to-red-800 transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {deletingId === quiz.id ? "..." : "🗑️"}
-                    </button>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() =>
+                          router.push(`/teacher/quizzes/${quiz.id}`)
+                        }
+                        className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition text-sm"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(quiz.id, quiz.title)}
+                        disabled={deletingId === quiz.id}
+                        className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-semibold hover:from-red-700 hover:to-red-800 transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {deletingId === quiz.id ? "..." : "🗑️"}
+                      </button>
+                    </div>
+                    {(quiz.questionCount ?? quiz.questions?.length ?? 0) >
+                      0 && (
+                      <button
+                        onClick={() =>
+                          router.push(`/teacher/quizzes/${quiz.id}/host`)
+                        }
+                        className="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition text-sm"
+                      >
+                        🎯 Host this Quiz
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

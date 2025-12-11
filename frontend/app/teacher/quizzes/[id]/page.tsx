@@ -216,12 +216,22 @@ export default function EditQuizPage() {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <button
-              onClick={() => router.push('/teacher/quizzes')}
-              className="mb-4 text-cyan-400 hover:text-cyan-300 font-semibold transition"
-            >
-              ← Back to Quizzes
-            </button>
+            <div className="flex gap-4 mb-4">
+              <button
+                onClick={() => router.push('/teacher/quizzes')}
+                className="px-6 py-3 bg-gradient-to-r from-slate-600 to-slate-700 text-white rounded-lg font-semibold shadow-lg hover:from-slate-700 hover:to-slate-800 transition transform hover:scale-105"
+              >
+                ← Back to Quizzes
+              </button>
+              {quiz && quiz.questions && quiz.questions.length > 0 && (
+                <button
+                  onClick={() => router.push(`/teacher/quizzes/${quizId}/host`)}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold shadow-lg hover:from-purple-700 hover:to-pink-700 transition transform hover:scale-105"
+                >
+                  🎯 Host Quiz Session
+                </button>
+              )}
+            </div>
             <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
               Edit Quiz
             </h1>

@@ -42,62 +42,48 @@ export default function AppHeader() {
             </Link>
           </div>
 
-          {/* Center: Navigation buttons */}
-          <div className="hidden md:flex items-center gap-2">
-            {/* Quizzes button (Teachers only) */}
-            {user.role === "TEACHER" && (
+            {/* Center: Navigation buttons */}
+            <div className="hidden md:flex items-center gap-2">
+              {/* Quizzes button (Teachers only) */}
+              {user.role === "TEACHER" && (
+                <Link
+                  href="/teacher/quizzes"
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                    isActive("/teacher/quizzes")
+                      ? "bg-blue-500/20 text-blue-300 border border-blue-500/50"
+                      : "bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-slate-700/50 hover:text-white"
+                  }`}
+                >
+                  📚 Quizzes
+                </Link>
+              )}
+
+              {/* Dashboard button */}
               <Link
-                href="/teacher/quizzes"
+                href="/dashboard"
                 className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                  isActive("/teacher/quizzes")
+                  isActive("/dashboard")
                     ? "bg-blue-500/20 text-blue-300 border border-blue-500/50"
                     : "bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-slate-700/50 hover:text-white"
                 }`}
               >
-                📚 Quizzes
+                📊 Dashboard
               </Link>
-            )}
 
-            {/* Dashboard button */}
-            <Link
-              href="/dashboard"
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                isActive("/dashboard")
-                  ? "bg-blue-500/20 text-blue-300 border border-blue-500/50"
-                  : "bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-slate-700/50 hover:text-white"
-              }`}
-            >
-              📊 Dashboard
-            </Link>
-
-            {/* Host a Quiz button (Teachers only) */}
-            {user.role === "TEACHER" && (
-              <Link
-                href="/teacher/host"
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                  isActive("/teacher/host")
-                    ? "bg-purple-500/20 text-purple-300 border border-purple-500/50"
-                    : "bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-slate-700/50 hover:text-white"
-                }`}
-              >
-                🎯 Host a Quiz
-              </Link>
-            )}
-
-            {/* Join Session button (Students only) */}
-            {user.role === "STUDENT" && (
-              <Link
-                href="/student/join"
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                  isActive("/student/join")
-                    ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50"
-                    : "bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-slate-700/50 hover:text-white"
-                }`}
-              >
-                🚀 Join Session
-              </Link>
-            )}
-          </div>
+              {/* Join Session button (Students only) */}
+              {user.role === "STUDENT" && (
+                <Link
+                  href="/student/join"
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                    isActive("/student/join")
+                      ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50"
+                      : "bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-slate-700/50 hover:text-white"
+                  }`}
+                >
+                  🚀 Join Session
+                </Link>
+              )}
+            </div>
 
           {/* Right: User info and logout */}
           <div className="flex items-center gap-6">
