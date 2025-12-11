@@ -1,11 +1,18 @@
-import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
-import jwt, { Secret } from 'jsonwebtoken';
-import { query } from '../db/connection';
-import { SignupPayload, LoginPayload, AuthResponse, User, UserRole } from 'shared/src/types/auth';
+import { Request, Response } from "express";
+import bcrypt from "bcryptjs";
+import jwt, { Secret } from "jsonwebtoken";
+import { query } from "../db/connection";
+import {
+  SignupPayload,
+  LoginPayload,
+  AuthResponse,
+  User,
+  UserRole,
+} from "shared/src/types/auth";
 
-const JWT_SECRET = process.env.JWT_SECRET || 'default-secret';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '2h';
+const JWT_SECRET = process.env.JWT_SECRET || "default-secret";
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "2h";
+export const COOKIE_NAME = "auth_token"; // Export for use in middleware
 
 /**
  * Generate a signed JWT for the given user. Only non-sensitive fields are included.
@@ -16,6 +23,37 @@ function generateToken(user: User): string {
   return jwt.sign({ userId: user.id, role: user.role }, secret, {
     expiresIn: JWT_EXPIRES_IN,
   } as jwt.SignOptions);
+}
+
+/**
+ * Set httpOnly cookie with JWT token
+ * httpOnly prevents JavaScript access (XSS protection)
+ * Secure flag ensures cookie only sent over HTTPS in production
+ * SameSite=Strict prevents CSRF attacks
+ */
+function setAuthCookie(res: Response, token: string) {
+  const isProduction = process.env.NODE_ENV === "production";
+  const maxAge = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+
+  res.cookie(COOKIE_NAME, token, {
+    httpOnly: true, // Prevents JavaScript access (XSS protection)
+    secure: isProduction, // Only send over HTTPS in production
+    sameSite: "strict", // CSRF protection
+    maxAge, // 2 hours
+    path: "/", // Available on all routes
+  });
+}
+
+/**
+ * Clear auth cookie
+ */
+function clearAuthCookie(res: Response) {
+  res.clearCookie(COOKIE_NAME, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+  });
 }
 
 /**
@@ -30,15 +68,15 @@ export async function signup(req: Request, res: Response) {
   const lastName = payload.lastName;
 
   if (!email || !password || !firstName || !lastName) {
-    return res.status(400).json({ error: 'Missing required fields.' });
+    return res.status(400).json({ error: "Missing required fields." });
   }
 
   // Password strength: at least 8 chars, one number and one letter
   const pwdStrong = /(?=.{8,})(?=.*\d)(?=.*[A-Za-z]).*/;
   if (!pwdStrong.test(password)) {
-    return res
-      .status(400)
-      .json({ error: 'Password must be at least 8 characters and include a number.' });
+    return res.status(400).json({
+      error: "Password must be at least 8 characters and include a number.",
+    });
   }
 
   // Normalize role
@@ -59,7 +97,7 @@ export async function signup(req: Request, res: Response) {
     );
 
     if (!result.rows.length) {
-      return res.status(500).json({ error: 'User creation failed.' });
+      return res.status(500).json({ error: "User creation failed." });
     }
 
     const row = result.rows[0];
@@ -69,19 +107,29 @@ export async function signup(req: Request, res: Response) {
       firstName: row.first_name,
       lastName: row.last_name,
       role: row.role as UserRole,
-      createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
+      createdAt: row.created_at
+        ? new Date(row.created_at).toISOString()
+        : undefined,
     };
 
     const token = generateToken(user);
-    const response: AuthResponse = { token, user, expiresIn: JWT_EXPIRES_IN };
+
+    // Set httpOnly cookie with token (more secure than localStorage)
+    setAuthCookie(res, token);
+
+    // Return user data only - token is in httpOnly cookie, not in response body
+    const response: AuthResponse = {
+      user,
+      expiresIn: JWT_EXPIRES_IN,
+    };
     return res.status(201).json(response);
-  } catch (err: any) {
-    if (err?.code === '23505') {
+  } catch (err: unknown) {
+    if ((err as { code?: string })?.code === "23505") {
       // Unique violation: email already exists
-      return res.status(409).json({ error: 'Email already exists.' });
+      return res.status(409).json({ error: "Email already exists." });
     }
-    console.error('Signup error', err);
-    return res.status(500).json({ error: 'Internal server error.' });
+    console.error("Signup error", err);
+    return res.status(500).json({ error: "Internal server error." });
   }
 }
 
@@ -95,7 +143,7 @@ export async function login(req: Request, res: Response) {
   const password = payload.password;
 
   if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password required.' });
+    return res.status(400).json({ error: "Email and password required." });
   }
 
   try {
@@ -105,13 +153,13 @@ export async function login(req: Request, res: Response) {
     );
 
     if (!result.rows.length) {
-      return res.status(401).json({ error: 'Invalid credentials.' });
+      return res.status(401).json({ error: "Invalid credentials." });
     }
 
     const row = result.rows[0];
     const valid = await bcrypt.compare(password, row.password);
     if (!valid) {
-      return res.status(401).json({ error: 'Invalid credentials.' });
+      return res.status(401).json({ error: "Invalid credentials." });
     }
 
     const user: User = {
@@ -120,14 +168,45 @@ export async function login(req: Request, res: Response) {
       firstName: row.first_name,
       lastName: row.last_name,
       role: row.role as UserRole,
-      createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
+      createdAt: row.created_at
+        ? new Date(row.created_at).toISOString()
+        : undefined,
     };
 
     const token = generateToken(user);
-    const response: AuthResponse = { token, user, expiresIn: JWT_EXPIRES_IN };
+
+    // Set httpOnly cookie with token (more secure than localStorage)
+    setAuthCookie(res, token);
+
+    // Return user data only - token is in httpOnly cookie, not in response body
+    const response: AuthResponse = {
+      user,
+      expiresIn: JWT_EXPIRES_IN,
+    };
     return res.status(200).json(response);
   } catch (err) {
-    console.error('Login error', err);
-    return res.status(500).json({ error: 'Internal server error.' });
+    console.error("Login error", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+}
+
+/**
+ * POST /auth/logout
+ * Logs out the user. With stateless JWT, this mainly serves for:
+ * - API consistency and logging
+ * - Future token blacklisting if needed
+ * The actual token invalidation happens client-side by removing it from storage.
+ */
+export async function logout(req: Request, res: Response) {
+  try {
+    // Clear the httpOnly cookie to log out the user
+    clearAuthCookie(res);
+
+    console.log("User logged out");
+
+    return res.status(200).json({ message: "Logged out successfully." });
+  } catch (err) {
+    console.error("Logout error", err);
+    return res.status(500).json({ error: "Internal server error." });
   }
 }

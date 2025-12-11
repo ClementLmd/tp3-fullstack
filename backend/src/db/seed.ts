@@ -7,7 +7,7 @@ async function seed() {
 
     // Create a test teacher
     const teacherPassword = await bcrypt.hash('teacher123', 10);
-    const teacherResult = await query(
+    await query(
       `INSERT INTO users (email, password, first_name, last_name, role)
        VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (email) DO NOTHING
@@ -25,9 +25,10 @@ async function seed() {
     );
 
     console.log('✅ Seed data created successfully');
-    console.log('📝 Test accounts:');
-    console.log('   Teacher: teacher@example.com / teacher123');
-    console.log('   Student: student@example.com / student123');
+    console.log('\n📝 Mock accounts for quick login:');
+    console.log('   👨‍🏫 Teacher: teacher@example.com / teacher123');
+    console.log('   👨‍🎓 Student: student@example.com / student123');
+    console.log('\n💡 Tip: Use the "Quick Login" buttons on the homepage to connect instantly!\n');
     
     process.exit(0);
   } catch (error) {

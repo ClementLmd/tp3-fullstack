@@ -24,15 +24,23 @@ pool.on("error", (err) => {
 });
 
 // Helper function to execute queries
-export const query = async (text: string, params?: any[]) => {
+export const query = async (text: string, params?: unknown[]) => {
   const start = Date.now();
   try {
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
-    console.log("Executed query", { text, duration, rows: res.rowCount });
+    // Only log queries in development
+    if (process.env.NODE_ENV !== "production") {
+      console.log("Executed query", { text, duration, rows: res.rowCount });
+    }
     return res;
   } catch (error) {
-    console.error("Query error", { text, error });
+    // Always log errors, but sanitize in production
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Query error", { text, error });
+    } else {
+      console.error("Query error", { error });
+    }
     throw error;
   }
 };
@@ -54,6 +62,7 @@ export const getClient = async () => {
   };
 
   // Override query method
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (client as any).query = wrappedQuery;
 
   // Override release method

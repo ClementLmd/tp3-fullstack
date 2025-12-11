@@ -3,14 +3,14 @@ import './globals.css'
 import ReactQueryProvider from '../lib/providers/ReactQueryProvider'
 
 export const metadata: Metadata = {
-  title: 'Quiz Platform - Real-time Interactive Quiz',
-  description: 'Real-time interactive quiz platform for teachers and students',
-}
+  title: "Quiz Platform - Real-time Interactive Quiz",
+  description: "Real-time interactive quiz platform for teachers and students",
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
@@ -18,6 +18,5 @@ export default function RootLayout({
         <ReactQueryProvider>{children}</ReactQueryProvider>
       </body>
     </html>
-  )
+  );
 }
-

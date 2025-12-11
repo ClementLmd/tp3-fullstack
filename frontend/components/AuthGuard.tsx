@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '../lib/store/authStore';
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "../lib/store/authStore";
 
 /**
  * AuthGuard wraps children and redirects unauthenticated users to `/login`.
@@ -28,13 +28,16 @@ export default function AuthGuard({ children, roles }: Props) {
 
   useEffect(() => {
     if (!token || !user) {
-      router.replace('/login');
+      router.replace("/login");
       return;
     }
     if (roles && !roles.includes(user.role)) {
       // If user doesn't have the required role, log out and redirect
-      logout();
-      router.replace('/login');
+      const handleLogout = async () => {
+        await logout();
+        router.replace("/login");
+      };
+      handleLogout();
     }
   }, [token, user, roles, router, logout]);
 

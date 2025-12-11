@@ -3,15 +3,19 @@
  * Connects controller logic to Express endpoints.
  */
 
-import { Router } from 'express';
-import { signup, login } from '../controllers/authController';
+import { Router } from "express";
+import { signup, login, logout } from "../controllers/authController";
+import { authenticateToken } from "../middleware/auth";
 
 const router = Router();
 
-// POST /api/signup - User registration
-router.post('/signup', signup);
+// POST /auth/signup - User registration
+router.post("/signup", signup);
 
-// POST /api/login - User login
-router.post('/login', login);
+// POST /auth/login - User login
+router.post("/login", login);
+
+// POST /auth/logout - User logout (requires authentication)
+router.post("/logout", authenticateToken, logout);
 
 export default router;
