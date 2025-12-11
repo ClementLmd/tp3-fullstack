@@ -27,6 +27,7 @@ import { registerQuizHandlers } from './quizHandler';
 describe('Quiz Socket Handlers', () => {
   let mockIo: Partial<Server>;
   let mockSocket: Partial<Socket> & { userId?: string; userRole?: string };
+  // eslint-disable-next-line @typescript-eslint/ban-types
   let socketEventHandlers: Record<string, Function>;
 
   beforeEach(() => {
@@ -42,16 +43,18 @@ describe('Quiz Socket Handlers', () => {
       id: 'test-socket-id',
       userId: 'teacher-123',
       userRole: 'TEACHER',
+      // eslint-disable-next-line @typescript-eslint/ban-types
       on: jest.fn((event: string, handler: Function) => {
         socketEventHandlers[event] = handler;
         return mockSocket as Socket;
       }),
       emit: jest.fn(),
-    } as any;
+    } as unknown as Socket;
 
-    // Mock io
+    // Mock io with proper room support
     mockIo = {
       emit: jest.fn(),
+      to: jest.fn().mockReturnThis(),
     };
 
     // Register handlers
@@ -125,6 +128,7 @@ describe('Quiz Socket Handlers', () => {
           title: 'Test Quiz',
         }),
       });
+      expect(mockIo.to).toHaveBeenCalledWith('teachers');
       expect(mockIo.emit).toHaveBeenCalledWith('quizCreated', expect.any(Object));
     });
 
@@ -269,6 +273,7 @@ describe('Quiz Socket Handlers', () => {
           title: 'Updated Quiz',
         }),
       });
+      expect(mockIo.to).toHaveBeenCalledWith('teachers');
       expect(mockIo.emit).toHaveBeenCalledWith('quizUpdated', expect.any(Object));
     });
 
@@ -321,6 +326,7 @@ describe('Quiz Socket Handlers', () => {
       expect(callback).toHaveBeenCalledWith({
         success: true,
       });
+      expect(mockIo.to).toHaveBeenCalledWith('teachers');
       expect(mockIo.emit).toHaveBeenCalledWith('quizDeleted', 'quiz-123');
     });
 
@@ -337,6 +343,7 @@ describe('Quiz Socket Handlers', () => {
         success: false,
         error: 'Quiz not found or you do not have permission to delete it.',
       });
+      expect(mockIo.to).not.toHaveBeenCalled();
       expect(mockIo.emit).not.toHaveBeenCalled();
     });
 
@@ -352,6 +359,7 @@ describe('Quiz Socket Handlers', () => {
         error: 'Unauthorized. Only teachers can delete quizzes.',
       });
       expect(mockQuery).not.toHaveBeenCalled();
+      expect(mockIo.to).not.toHaveBeenCalled();
     });
 
     it('should reject if quiz ID is missing', async () => {
@@ -364,6 +372,7 @@ describe('Quiz Socket Handlers', () => {
         error: 'Quiz ID is required.',
       });
       expect(mockQuery).not.toHaveBeenCalled();
+      expect(mockIo.to).not.toHaveBeenCalled();
     });
   });
 });

@@ -186,8 +186,9 @@ export function registerQuizHandlers(io: Server<ClientToServerEvents, ServerToCl
           questions: insertedQuestions,
         };
 
-        // Emit to all connected teachers (broadcast)
-        io.emit('quizCreated', quiz);
+        // Emit to all connected teachers only (broadcast to teacher room)
+        // Note: In production, implement proper room management for teachers
+        io.to('teachers').emit('quizCreated', quiz);
 
         callback({
           success: true,
@@ -337,8 +338,9 @@ export function registerQuizHandlers(io: Server<ClientToServerEvents, ServerToCl
           questions: insertedQuestions,
         };
 
-        // Emit to all connected teachers (broadcast)
-        io.emit('quizUpdated', quiz);
+        // Emit to all connected teachers only (broadcast to teacher room)
+        // Note: In production, implement proper room management for teachers
+        io.to('teachers').emit('quizUpdated', quiz);
 
         callback({
           success: true,
@@ -403,8 +405,9 @@ export function registerQuizHandlers(io: Server<ClientToServerEvents, ServerToCl
         });
       }
 
-      // Emit to all connected teachers (broadcast)
-      io.emit('quizDeleted', quizId);
+      // Emit to all connected teachers only (broadcast to teacher room)
+      // Note: In production, implement proper room management for teachers
+      io.to('teachers').emit('quizDeleted', quizId);
 
       callback({
         success: true,

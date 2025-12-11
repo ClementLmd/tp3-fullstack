@@ -56,8 +56,16 @@ io.use(authenticateSocket);
 
 // Socket.io connection
 io.on("connection", (socket) => {
-  const userId = (socket as unknown as { userId: string }).userId;
-  console.log("Client connected:", socket.id, "User:", userId);
+  const userId = (socket as unknown as { userId: string; userRole: string }).userId;
+  const userRole = (socket as unknown as { userId: string; userRole: string }).userRole;
+  
+  console.log("Client connected:", socket.id, "User:", userId, "Role:", userRole);
+
+  // Join teachers to a teachers-only room for broadcasting
+  if (userRole === 'TEACHER') {
+    socket.join('teachers');
+    console.log("Teacher joined teachers room:", socket.id);
+  }
 
   // Register quiz management handlers
   registerQuizHandlers(io, socket);
