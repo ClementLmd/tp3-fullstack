@@ -13,68 +13,85 @@ interface UseSocketOptions {
   autoConnect?: boolean;
 }
 
-export function useSocket(options: UseSocketOptions = {}) {
-  const { autoConnect = false } = options;
-  const socketRef = useRef<Socket<ServerToClientEvents, ClientToServerEvents> | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+// Global socket instance to persist across page navigations
+let globalSocket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
 
-  const connect = useCallback(() => {
-    if (socketRef.current?.connected) {
-      return socketRef.current;
+// Helper to get or create global socket
+function getGlobalSocket(): Socket<ServerToClientEvents, ClientToServerEvents> {
+  if (!globalSocket || !globalSocket.connected) {
+    if (globalSocket) {
+      globalSocket.disconnect();
     }
-
-    // Disconnect existing socket if it exists
-    if (socketRef.current) {
-      socketRef.current.disconnect();
-    }
-
-    const socket = io(WS_URL, {
+    
+    globalSocket = io(WS_URL, {
       transports: ['websocket', 'polling'],
       withCredentials: true,
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
+  }
+  
+  return globalSocket;
+}
 
-    socket.on('connect', () => {
-      console.log('Socket connected:', socket.id);
-      setIsConnected(true);
-      setError(null);
-    });
+export function useSocket(options: UseSocketOptions = {}) {
+  const { autoConnect = false } = options;
+  const [isConnected, setIsConnected] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const listenersSetup = useRef(false);
 
-    socket.on('disconnect', (reason) => {
-      console.log('Socket disconnected:', reason);
-      setIsConnected(false);
+  const connect = useCallback(() => {
+    const socket = getGlobalSocket();
+    
+    // Only setup listeners once
+    if (!listenersSetup.current) {
+      socket.on('connect', () => {
+        console.log('Socket connected:', socket.id);
+        setIsConnected(true);
+        setError(null);
+      });
+
+      socket.on('disconnect', (reason) => {
+        console.log('Socket disconnected:', reason);
+        setIsConnected(false);
+        
+        // Only set error if disconnect was not intentional
+        if (reason === 'io server disconnect' || reason === 'io client disconnect') {
+          // Intentional disconnect
+        } else {
+          console.warn('Socket disconnected unexpectedly:', reason);
+        }
+      });
+
+      socket.on('connect_error', (err) => {
+        console.error('Socket connection error:', err);
+        setError(err.message);
+        setIsConnected(false);
+      });
+
+      socket.on('error', (err) => {
+        console.error('Socket error:', err);
+        setError(err.message);
+      });
       
-      // Only set error if disconnect was not intentional
-      if (reason === 'io server disconnect' || reason === 'io client disconnect') {
-        // Intentional disconnect
-      } else {
-        console.warn('Socket disconnected unexpectedly:', reason);
-      }
-    });
-
-    socket.on('connect_error', (err) => {
-      console.error('Socket connection error:', err);
-      setError(err.message);
-      setIsConnected(false);
-    });
-
-    socket.on('error', (err) => {
-      console.error('Socket error:', err);
-      setError(err.message);
-    });
-
-    socketRef.current = socket;
+      listenersSetup.current = true;
+    }
+    
+    // Update connection state if already connected
+    if (socket.connected) {
+      setIsConnected(true);
+    }
+    
     return socket;
   }, []);
 
   const disconnect = useCallback(() => {
-    if (socketRef.current) {
-      socketRef.current.disconnect();
-      socketRef.current = null;
+    if (globalSocket) {
+      globalSocket.disconnect();
+      globalSocket = null;
       setIsConnected(false);
+      listenersSetup.current = false;
     }
   }, []);
 
@@ -83,13 +100,14 @@ export function useSocket(options: UseSocketOptions = {}) {
       connect();
     }
 
+    // Don't disconnect on unmount to preserve connection across pages
     return () => {
-      disconnect();
+      // Intentionally not disconnecting
     };
-  }, [autoConnect, connect, disconnect]);
+  }, [autoConnect, connect]);
 
   return {
-    socket: socketRef.current,
+    socket: globalSocket,
     isConnected,
     error,
     connect,
@@ -165,6 +183,13 @@ export function useStudentSocket() {
     isCorrect: boolean;
     pointsEarned: number;
   } | null>(null);
+
+  // Ensure socket is connected when component mounts
+  useEffect(() => {
+    if (!socket || !socket.connected) {
+      connect();
+    }
+  }, [socket, connect]);
 
   useEffect(() => {
     if (!socket) return;

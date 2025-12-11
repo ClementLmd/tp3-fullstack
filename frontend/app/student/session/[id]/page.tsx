@@ -187,7 +187,7 @@ export default function StudentSessionPage() {
                     {/* Multiple Choice Options */}
                     {currentQuestion.type === QuestionType.MULTIPLE_CHOICE && currentQuestion.options && (
                       <div className="space-y-3 mb-6">
-                        {currentQuestion.options.choices.map((choice, idx) => (
+                        {currentQuestion.options.choices.map((choice: string, idx: number) => (
                           <button
                             key={idx}
                             onClick={() => setSelectedAnswer(idx.toString())}
