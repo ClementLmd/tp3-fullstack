@@ -85,8 +85,8 @@ describe("AuthGuard", () => {
     expect(mockReplace).toHaveBeenCalledWith("/login");
   });
 
-  it("should redirect when user does not have required role", async () => {
-    const mockLogout = jest.fn().mockResolvedValue(undefined);
+  it("should redirect to unauthorized page when user does not have required role", async () => {
+    const mockLogout = jest.fn();
     const mockInitialize = jest.fn();
 
     (useAuthStore as unknown as jest.Mock).mockImplementation((selector) => {
@@ -109,11 +109,15 @@ describe("AuthGuard", () => {
       </AuthGuard>
     );
 
-    // Wait for initialization and async logout
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    // Wait for initialization and redirect
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
 
-    expect(mockLogout).toHaveBeenCalled();
-    expect(mockReplace).toHaveBeenCalledWith("/login");
+    // User should NOT be logged out - they're authenticated, just not authorized
+    expect(mockLogout).not.toHaveBeenCalled();
+    // Should redirect to unauthorized page instead of login
+    expect(mockReplace).toHaveBeenCalledWith("/unauthorized");
   });
 
   it("should allow access when user has required role", () => {

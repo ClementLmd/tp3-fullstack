@@ -1,24 +1,18 @@
-// User types
-export enum UserRole {
-  TEACHER = 'TEACHER',
-  STUDENT = 'STUDENT',
-}
-
-export interface User {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: UserRole;
-  createdAt: string;
-  updatedAt: string;
-}
+// Re-export auth types for convenience
+export { UserRole } from "./auth";
+export type {
+  User,
+  SignupPayload,
+  LoginPayload,
+  AuthResponse,
+  JwtPayload,
+} from "./auth";
 
 // Question types
 export enum QuestionType {
-  MULTIPLE_CHOICE = 'MULTIPLE_CHOICE',
-  TRUE_FALSE = 'TRUE_FALSE',
-  TEXT = 'TEXT',
+  MULTIPLE_CHOICE = "MULTIPLE_CHOICE",
+  TRUE_FALSE = "TRUE_FALSE",
+  TEXT = "TEXT",
 }
 
 export interface Question {
@@ -46,7 +40,8 @@ export interface Quiz {
   creatorId: string;
   createdAt: string;
   updatedAt: string;
-  questions?: Question[];
+  questions?: Question[]; // Full question objects (when fetching single quiz)
+  questionCount?: number; // Count of questions (when fetching quiz list)
 }
 
 // Session types
@@ -83,28 +78,13 @@ export interface Answer {
 }
 
 // API Request/Response types
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface RegisterRequest {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  role: UserRole;
-}
-
-export interface AuthResponse {
-  token: string;
-  user: User;
-}
+// Note: LoginRequest and RegisterRequest are deprecated
+// Use LoginPayload and SignupPayload from './auth' instead (already re-exported above)
 
 export interface CreateQuizRequest {
   title: string;
   description?: string;
-  questions: Omit<Question, 'id' | 'quizId' | 'createdAt' | 'updatedAt'>[];
+  questions: Omit<Question, "id" | "quizId" | "createdAt" | "updatedAt">[];
 }
 
 export interface JoinSessionRequest {
@@ -129,4 +109,3 @@ export interface ClientToServerEvents {
   answer: (data: { questionId: string; answer: string }) => void;
   leaveSession: () => void;
 }
-
