@@ -1,11 +1,17 @@
-import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
-import jwt, { Secret } from 'jsonwebtoken';
-import { query } from '../db/connection';
-import { SignupPayload, LoginPayload, AuthResponse, User, UserRole } from 'shared/src/types/auth';
+import { Request, Response } from "express";
+import bcrypt from "bcryptjs";
+import jwt, { Secret } from "jsonwebtoken";
+import { query } from "../db/connection";
+import {
+  SignupPayload,
+  LoginPayload,
+  AuthResponse,
+  User,
+  UserRole,
+} from "shared/src/types/auth";
 
-const JWT_SECRET = process.env.JWT_SECRET || 'default-secret';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '2h';
+const JWT_SECRET = process.env.JWT_SECRET || "default-secret";
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "2h";
 
 /**
  * Generate a signed JWT for the given user. Only non-sensitive fields are included.
@@ -30,7 +36,7 @@ export async function signup(req: Request, res: Response) {
   const lastName = payload.lastName;
 
   if (!email || !password || !firstName || !lastName) {
-    return res.status(400).json({ error: 'Missing required fields.' });
+    return res.status(400).json({ error: "Missing required fields." });
   }
 
   // Password strength: at least 8 chars, one number and one letter
@@ -38,7 +44,9 @@ export async function signup(req: Request, res: Response) {
   if (!pwdStrong.test(password)) {
     return res
       .status(400)
-      .json({ error: 'Password must be at least 8 characters and include a number.' });
+      .json({
+        error: "Password must be at least 8 characters and include a number.",
+      });
   }
 
   // Normalize role
@@ -59,7 +67,7 @@ export async function signup(req: Request, res: Response) {
     );
 
     if (!result.rows.length) {
-      return res.status(500).json({ error: 'User creation failed.' });
+      return res.status(500).json({ error: "User creation failed." });
     }
 
     const row = result.rows[0];
@@ -69,19 +77,21 @@ export async function signup(req: Request, res: Response) {
       firstName: row.first_name,
       lastName: row.last_name,
       role: row.role as UserRole,
-      createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
+      createdAt: row.created_at
+        ? new Date(row.created_at).toISOString()
+        : undefined,
     };
 
     const token = generateToken(user);
     const response: AuthResponse = { token, user, expiresIn: JWT_EXPIRES_IN };
     return res.status(201).json(response);
   } catch (err: any) {
-    if (err?.code === '23505') {
+    if (err?.code === "23505") {
       // Unique violation: email already exists
-      return res.status(409).json({ error: 'Email already exists.' });
+      return res.status(409).json({ error: "Email already exists." });
     }
-    console.error('Signup error', err);
-    return res.status(500).json({ error: 'Internal server error.' });
+    console.error("Signup error", err);
+    return res.status(500).json({ error: "Internal server error." });
   }
 }
 
@@ -95,7 +105,7 @@ export async function login(req: Request, res: Response) {
   const password = payload.password;
 
   if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password required.' });
+    return res.status(400).json({ error: "Email and password required." });
   }
 
   try {
@@ -105,13 +115,13 @@ export async function login(req: Request, res: Response) {
     );
 
     if (!result.rows.length) {
-      return res.status(401).json({ error: 'Invalid credentials.' });
+      return res.status(401).json({ error: "Invalid credentials." });
     }
 
     const row = result.rows[0];
     const valid = await bcrypt.compare(password, row.password);
     if (!valid) {
-      return res.status(401).json({ error: 'Invalid credentials.' });
+      return res.status(401).json({ error: "Invalid credentials." });
     }
 
     const user: User = {
@@ -120,15 +130,17 @@ export async function login(req: Request, res: Response) {
       firstName: row.first_name,
       lastName: row.last_name,
       role: row.role as UserRole,
-      createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
+      createdAt: row.created_at
+        ? new Date(row.created_at).toISOString()
+        : undefined,
     };
 
     const token = generateToken(user);
     const response: AuthResponse = { token, user, expiresIn: JWT_EXPIRES_IN };
     return res.status(200).json(response);
   } catch (err) {
-    console.error('Login error', err);
-    return res.status(500).json({ error: 'Internal server error.' });
+    console.error("Login error", err);
+    return res.status(500).json({ error: "Internal server error." });
   }
 }
 
@@ -144,23 +156,23 @@ export async function logout(req: Request, res: Response) {
     // With stateless JWT, logout is primarily client-side
     // This endpoint exists for API consistency and potential future token blacklisting
     // The token will naturally expire based on its expiration time
-    
+
     // Optional: Extract token for logging purposes
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+
     // Log logout event (optional, for analytics/tracking)
     if (token) {
       // In a production system, you might want to:
       // 1. Add token to a blacklist (Redis/database)
       // 2. Log the logout event
       // 3. Invalidate refresh tokens if using refresh token flow
-      console.log('User logged out');
+      console.log("User logged out");
     }
-    
-    return res.status(200).json({ message: 'Logged out successfully.' });
+
+    return res.status(200).json({ message: "Logged out successfully." });
   } catch (err) {
-    console.error('Logout error', err);
-    return res.status(500).json({ error: 'Internal server error.' });
+    console.error("Logout error", err);
+    return res.status(500).json({ error: "Internal server error." });
   }
 }

@@ -33,8 +33,11 @@ export default function AuthGuard({ children, roles }: Props) {
     }
     if (roles && !roles.includes(user.role)) {
       // If user doesn't have the required role, log out and redirect
-      logout();
-      router.replace('/login');
+      const handleLogout = async () => {
+        await logout();
+        router.replace('/login');
+      };
+      handleLogout();
     }
   }, [token, user, roles, router, logout]);
 
