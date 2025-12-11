@@ -117,10 +117,8 @@ export async function signup(req: Request, res: Response) {
     // Set httpOnly cookie with token (more secure than localStorage)
     setAuthCookie(res, token);
 
-    // Return user data (but NOT the token in response body for security)
-    // Token is now only accessible via httpOnly cookie
+    // Return user data only - token is in httpOnly cookie, not in response body
     const response: AuthResponse = {
-      token: "",
       user,
       expiresIn: JWT_EXPIRES_IN,
     };
@@ -180,10 +178,8 @@ export async function login(req: Request, res: Response) {
     // Set httpOnly cookie with token (more secure than localStorage)
     setAuthCookie(res, token);
 
-    // Return user data (but NOT the token in response body for security)
-    // Token is now only accessible via httpOnly cookie
+    // Return user data only - token is in httpOnly cookie, not in response body
     const response: AuthResponse = {
-      token: "",
       user,
       expiresIn: JWT_EXPIRES_IN,
     };

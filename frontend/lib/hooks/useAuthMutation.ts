@@ -23,9 +23,9 @@ export function useAuthMutation(mode: 'login' | 'signup') {
       return res.data;
     },
     onSuccess: (data: AuthResponse) => {
-      // Token is now stored in httpOnly cookie by the backend
-      // Only store user data in client state (NOT the token)
-      setAuth(data.user, ""); // Empty token string, actual token is in cookie
+      // Token is stored in httpOnly cookie by the backend (not in response body)
+      // Only store user data in client state
+      setAuth(data.user, ""); // Token not needed in client state, it's in cookie
 
       // Store user data for UI state persistence
       try {

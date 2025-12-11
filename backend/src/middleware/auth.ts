@@ -9,22 +9,22 @@ export interface AuthRequest extends Request {
 }
 
 /**
- * Authenticate token from httpOnly cookie (preferred) or Authorization header (fallback)
- * Priority: Cookie > Authorization header (for backward compatibility during migration)
+ * Authenticate token from httpOnly cookie
+ * 
+ * Security: Token is stored in httpOnly cookie (set by login/signup endpoints)
+ * This prevents XSS attacks as JavaScript cannot access httpOnly cookies.
+ * 
+ * Note: Authorization header fallback removed - all auth now uses cookies only.
+ * If you need to support API clients without cookies, consider implementing
+ * a separate API key authentication mechanism.
  */
 export const authenticateToken = (
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
-  // Try to get token from httpOnly cookie first (more secure)
-  let token = req.cookies?.[COOKIE_NAME];
-
-  // Fallback to Authorization header for backward compatibility
-  if (!token) {
-    const authHeader = req.headers["authorization"];
-    token = authHeader && authHeader.split(" ")[1];
-  }
+  // Get token from httpOnly cookie (only secure method)
+  const token = req.cookies?.[COOKIE_NAME];
 
   if (!token) {
     return res.status(401).json({ error: "Access token required" });
