@@ -1,16 +1,18 @@
-import { Response } from 'express';
-import { query, getClient } from '../db/connection';
-import { AuthRequest } from '../middleware/auth';
-import { Quiz, Question, QuestionType } from 'shared/src/types';
+import { Response } from "express";
+import { query, getClient } from "../db/connection";
+import { AuthRequest } from "../middleware/auth";
+import { Quiz, Question, QuestionType } from "shared/src/types";
 
 /**
  * Validate questions array
  * Returns error message if validation fails, null if valid
  */
-function validateQuestions(questions: any[]): string | null {
+function validateQuestions(
+  questions: Omit<Question, "id" | "quizId" | "createdAt" | "updatedAt">[]
+): string | null {
   for (let i = 0; i < questions.length; i++) {
     const q = questions[i];
-    
+
     if (!q.text || !q.text.trim()) {
       return `Question ${i + 1}: text is required.`;
     }
@@ -21,17 +23,34 @@ function validateQuestions(questions: any[]): string | null {
 
     // Validate based on question type
     if (q.type === QuestionType.MULTIPLE_CHOICE) {
-      if (!q.options || !q.options.choices || !Array.isArray(q.options.choices) || q.options.choices.length < 2) {
-        return `Question ${i + 1}: Multiple choice requires at least 2 choices.`;
+      if (
+        !q.options ||
+        !q.options.choices ||
+        !Array.isArray(q.options.choices) ||
+        q.options.choices.length < 2
+      ) {
+        return `Question ${
+          i + 1
+        }: Multiple choice requires at least 2 choices.`;
       }
-      if (typeof q.options.correctAnswer !== 'number' || q.options.correctAnswer < 0 || q.options.correctAnswer >= q.options.choices.length) {
+      if (
+        typeof q.options.correctAnswer !== "number" ||
+        q.options.correctAnswer < 0 ||
+        q.options.correctAnswer >= q.options.choices.length
+      ) {
         return `Question ${i + 1}: Invalid correct answer index.`;
       }
     }
 
     if (q.type === QuestionType.TRUE_FALSE) {
-      if (!q.correctAnswer || typeof q.correctAnswer !== 'string' || !['true', 'false'].includes(q.correctAnswer.toLowerCase())) {
-        return `Question ${i + 1}: True/False requires correctAnswer to be 'true' or 'false'.`;
+      if (
+        !q.correctAnswer ||
+        typeof q.correctAnswer !== "string" ||
+        !["true", "false"].includes(q.correctAnswer.toLowerCase())
+      ) {
+        return `Question ${
+          i + 1
+        }: True/False requires correctAnswer to be 'true' or 'false'.`;
       }
     }
 
@@ -42,16 +61,22 @@ function validateQuestions(questions: any[]): string | null {
     }
 
     // Validate points
-    if (q.points !== undefined && (typeof q.points !== 'number' || q.points < 0)) {
+    if (
+      q.points !== undefined &&
+      (typeof q.points !== "number" || q.points < 0)
+    ) {
       return `Question ${i + 1}: Points must be a positive number.`;
     }
 
     // Validate time limit
-    if (q.timeLimit !== undefined && (typeof q.timeLimit !== 'number' || q.timeLimit < 0)) {
+    if (
+      q.timeLimit !== undefined &&
+      (typeof q.timeLimit !== "number" || q.timeLimit < 0)
+    ) {
       return `Question ${i + 1}: Time limit must be a positive number.`;
     }
   }
-  
+
   return null;
 }
 
@@ -59,9 +84,11 @@ function validateQuestions(questions: any[]): string | null {
  * Prepare question options for database storage
  * Returns JSON string for MULTIPLE_CHOICE, null otherwise
  */
-function prepareQuestionOptions(question: any): string | null {
-  return question.type === QuestionType.MULTIPLE_CHOICE 
-    ? JSON.stringify(question.options) 
+function prepareQuestionOptions(
+  question: Omit<Question, "id" | "quizId" | "createdAt" | "updatedAt">
+): string | null {
+  return question.type === QuestionType.MULTIPLE_CHOICE
+    ? JSON.stringify(question.options)
     : null;
 }
 
@@ -88,7 +115,7 @@ export async function listQuizzes(req: AuthRequest, res: Response) {
       [req.userId]
     );
 
-    const quizzes: Quiz[] = result.rows.map(row => ({
+    const quizzes: Quiz[] = result.rows.map((row) => ({
       id: row.id,
       title: row.title,
       description: row.description,
@@ -100,8 +127,8 @@ export async function listQuizzes(req: AuthRequest, res: Response) {
 
     return res.status(200).json(quizzes);
   } catch (err) {
-    console.error('List quizzes error', err);
-    return res.status(500).json({ error: 'Internal server error.' });
+    console.error("List quizzes error", err);
+    return res.status(500).json({ error: "Internal server error." });
   }
 }
 
@@ -122,7 +149,7 @@ export async function getQuiz(req: AuthRequest, res: Response) {
     );
 
     if (!quizResult.rows.length) {
-      return res.status(404).json({ error: 'Quiz not found.' });
+      return res.status(404).json({ error: "Quiz not found." });
     }
 
     // Get questions
@@ -142,7 +169,7 @@ export async function getQuiz(req: AuthRequest, res: Response) {
       creatorId: row.creator_id,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      questions: questionsResult.rows.map(q => ({
+      questions: questionsResult.rows.map((q) => ({
         id: q.id,
         quizId: q.quiz_id,
         text: q.text,
@@ -159,8 +186,8 @@ export async function getQuiz(req: AuthRequest, res: Response) {
 
     return res.status(200).json(quiz);
   } catch (err) {
-    console.error('Get quiz error', err);
-    return res.status(500).json({ error: 'Internal server error.' });
+    console.error("Get quiz error", err);
+    return res.status(500).json({ error: "Internal server error." });
   }
 }
 
@@ -172,11 +199,13 @@ export async function createQuiz(req: AuthRequest, res: Response) {
   const { title, description, questions } = req.body;
 
   if (!title || !title.trim()) {
-    return res.status(400).json({ error: 'Title is required.' });
+    return res.status(400).json({ error: "Title is required." });
   }
 
   if (!questions || !Array.isArray(questions) || questions.length === 0) {
-    return res.status(400).json({ error: 'At least one question is required.' });
+    return res
+      .status(400)
+      .json({ error: "At least one question is required." });
   }
 
   // Validate questions
@@ -188,7 +217,7 @@ export async function createQuiz(req: AuthRequest, res: Response) {
   const client = await getClient();
 
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     // Insert quiz
     const quizResult = await client.query(
@@ -240,7 +269,7 @@ export async function createQuiz(req: AuthRequest, res: Response) {
       });
     }
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
     const quiz: Quiz = {
       id: quizRow.id,
@@ -254,9 +283,9 @@ export async function createQuiz(req: AuthRequest, res: Response) {
 
     return res.status(201).json(quiz);
   } catch (err) {
-    await client.query('ROLLBACK');
-    console.error('Create quiz error', err);
-    return res.status(500).json({ error: 'Internal server error.' });
+    await client.query("ROLLBACK");
+    console.error("Create quiz error", err);
+    return res.status(500).json({ error: "Internal server error." });
   } finally {
     client.release();
   }
@@ -271,11 +300,13 @@ export async function updateQuiz(req: AuthRequest, res: Response) {
   const { title, description, questions } = req.body;
 
   if (!title || !title.trim()) {
-    return res.status(400).json({ error: 'Title is required.' });
+    return res.status(400).json({ error: "Title is required." });
   }
 
   if (!questions || !Array.isArray(questions) || questions.length === 0) {
-    return res.status(400).json({ error: 'At least one question is required.' });
+    return res
+      .status(400)
+      .json({ error: "At least one question is required." });
   }
 
   // Validate questions
@@ -287,7 +318,7 @@ export async function updateQuiz(req: AuthRequest, res: Response) {
   const client = await getClient();
 
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     // Check if quiz exists and belongs to user
     const checkResult = await client.query(
@@ -296,8 +327,8 @@ export async function updateQuiz(req: AuthRequest, res: Response) {
     );
 
     if (!checkResult.rows.length) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Quiz not found.' });
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Quiz not found." });
     }
 
     // Update quiz
@@ -353,7 +384,7 @@ export async function updateQuiz(req: AuthRequest, res: Response) {
       });
     }
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
     const quiz: Quiz = {
       id: quizRow.id,
@@ -367,9 +398,9 @@ export async function updateQuiz(req: AuthRequest, res: Response) {
 
     return res.status(200).json(quiz);
   } catch (err) {
-    await client.query('ROLLBACK');
-    console.error('Update quiz error', err);
-    return res.status(500).json({ error: 'Internal server error.' });
+    await client.query("ROLLBACK");
+    console.error("Update quiz error", err);
+    return res.status(500).json({ error: "Internal server error." });
   } finally {
     client.release();
   }
@@ -392,12 +423,12 @@ export async function deleteQuiz(req: AuthRequest, res: Response) {
     );
 
     if (!result.rows.length) {
-      return res.status(404).json({ error: 'Quiz not found.' });
+      return res.status(404).json({ error: "Quiz not found." });
     }
 
-    return res.status(200).json({ message: 'Quiz deleted successfully.' });
+    return res.status(200).json({ message: "Quiz deleted successfully." });
   } catch (err) {
-    console.error('Delete quiz error', err);
-    return res.status(500).json({ error: 'Internal server error.' });
+    console.error("Delete quiz error", err);
+    return res.status(500).json({ error: "Internal server error." });
   }
 }
