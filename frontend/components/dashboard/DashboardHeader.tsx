@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useAuthStore } from '@/lib/store/authStore';
-import { useRouter } from 'next/navigation';
+import React from "react";
+import { useAuthStore } from "@/lib/store/authStore";
+import { useRouter } from "next/navigation";
 
 export default function DashboardHeader() {
   const user = useAuthStore((s) => s.user);
@@ -11,7 +11,7 @@ export default function DashboardHeader() {
 
   const handleLogout = async () => {
     await logout();
-    router.push('/login');
+    router.push("/");
   };
 
   return (
@@ -23,7 +23,7 @@ export default function DashboardHeader() {
               📊 Dashboard
             </div>
           </div>
-          
+
           <div className="flex items-center gap-6">
             <div className="hidden sm:block text-right">
               <p className="text-sm text-slate-400">Welcome back</p>
@@ -35,9 +35,9 @@ export default function DashboardHeader() {
                 <span className="text-xs text-slate-300">{user?.role}</span>
               </div>
             </div>
-            
+
             <div className="h-10 w-px bg-white/10"></div>
-            
+
             <button
               onClick={handleLogout}
               className="px-4 py-2 rounded-lg text-sm font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 transition-all duration-200"
@@ -50,4 +50,3 @@ export default function DashboardHeader() {
     </div>
   );
 }
-
