@@ -44,12 +44,10 @@ export default function AuthGuard({ children, roles }: Props) {
       return;
     }
     if (roles && !roles.includes(user.role)) {
-      // If user doesn't have the required role, log out and redirect
-      const handleLogout = async () => {
-        await logout();
-        router.replace("/login");
-      };
-      handleLogout();
+      // If user doesn't have the required role, redirect to unauthorized page
+      // Don't logout - user is authenticated, just not authorized for this route
+      router.replace("/unauthorized");
+      return;
     }
   }, [hasInitialized, isAuthenticated, user, roles, router, logout]);
 
