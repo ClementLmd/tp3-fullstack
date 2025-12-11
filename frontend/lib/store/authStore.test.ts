@@ -32,14 +32,13 @@ describe("Auth Store", () => {
     jest.clearAllMocks();
 
     // Reset the store state completely
-    useAuthStore.setState({ user: null, token: null, isAuthenticated: false });
+    useAuthStore.setState({ user: null, isAuthenticated: false });
   });
 
   it("should initialize with no user", () => {
     const { result } = renderHook(() => useAuthStore());
 
     expect(result.current.user).toBeNull();
-    expect(result.current.token).toBeNull();
     expect(result.current.isAuthenticated).toBe(false);
   });
 
@@ -55,12 +54,11 @@ describe("Auth Store", () => {
     };
 
     act(() => {
-      result.current.setAuth(mockUser, "token");
+      result.current.setAuth(mockUser);
     });
 
     expect(result.current.user).toEqual(mockUser);
     expect(result.current.isAuthenticated).toBe(true);
-    expect(result.current.token).toBeNull(); // Token is in cookie, not state
 
     // Check localStorage - Zustand persist stores under 'auth-storage'
     const storedData = JSON.parse(
@@ -84,7 +82,6 @@ describe("Auth Store", () => {
     const persistedState = {
       state: {
         user: mockUser,
-        token: null,
         isAuthenticated: true,
       },
       version: 0,
@@ -97,7 +94,6 @@ describe("Auth Store", () => {
     act(() => {
       useAuthStore.setState({
         user: mockUser,
-        token: null,
         isAuthenticated: true,
       });
     });
@@ -126,7 +122,7 @@ describe("Auth Store", () => {
 
     // Set auth first
     act(() => {
-      result.current.setAuth(mockUser, "token");
+      result.current.setAuth(mockUser);
     });
 
     expect(result.current.isAuthenticated).toBe(true);
@@ -164,7 +160,7 @@ describe("Auth Store", () => {
     };
 
     act(() => {
-      result.current.setAuth(mockUser, "token");
+      result.current.setAuth(mockUser);
     });
 
     // Mock failed logout API call

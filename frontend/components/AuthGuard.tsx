@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../lib/store/authStore";
 
@@ -15,19 +15,31 @@ type Props = {
 
 export default function AuthGuard({ children, roles }: Props) {
   const router = useRouter();
-  const { user, token, initialize, logout } = useAuthStore((s) => ({
+  const { user, isAuthenticated, initialize, logout } = useAuthStore((s) => ({
     user: s.user,
-    token: s.token,
+    isAuthenticated: s.isAuthenticated,
     initialize: s.initialize,
     logout: s.logout,
   }));
 
+  // Track if we've initialized - Zustand persist restores state synchronously,
+  // but we need to call initialize() once to sync isAuthenticated
+  const [hasInitialized, setHasInitialized] = useState(false);
+
   useEffect(() => {
+    // Initialize synchronously - Zustand persist restores state immediately on store creation
+    // This just syncs isAuthenticated with user state
     initialize();
+    setHasInitialized(true);
   }, [initialize]);
 
   useEffect(() => {
-    if (!token || !user) {
+    // Only check auth after initialization
+    if (!hasInitialized) return;
+
+    // Token is now in httpOnly cookie, not in Zustand store
+    // Check isAuthenticated and user instead of token
+    if (!isAuthenticated || !user) {
       router.replace("/login");
       return;
     }
@@ -39,9 +51,14 @@ export default function AuthGuard({ children, roles }: Props) {
       };
       handleLogout();
     }
-  }, [token, user, roles, router, logout]);
+  }, [hasInitialized, isAuthenticated, user, roles, router, logout]);
 
-  if (!token || !user) return null; // or a loader
+  // Show nothing if not initialized or not authenticated
+  // Zustand persist restores state synchronously on store creation,
+  // but we need to call initialize() to sync isAuthenticated
+  if (!hasInitialized || !isAuthenticated || !user) {
+    return null; // or a loader
+  }
 
   return <>{children}</>;
 }

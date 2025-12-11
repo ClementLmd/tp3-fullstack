@@ -29,7 +29,7 @@ function generateToken(user: User): string {
  * Set httpOnly cookie with JWT token
  * httpOnly prevents JavaScript access (XSS protection)
  * Secure flag ensures cookie only sent over HTTPS in production
- * SameSite=Strict prevents CSRF attacks
+ * SameSite=Lax in dev (allows cross-origin requests), Strict in production (CSRF protection)
  */
 function setAuthCookie(res: Response, token: string) {
   const isProduction = process.env.NODE_ENV === "production";
@@ -38,7 +38,7 @@ function setAuthCookie(res: Response, token: string) {
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true, // Prevents JavaScript access (XSS protection)
     secure: isProduction, // Only send over HTTPS in production
-    sameSite: "strict", // CSRF protection
+    sameSite: isProduction ? "strict" : "lax", // Lax in dev for cross-origin, Strict in prod for CSRF protection
     maxAge, // 2 hours
     path: "/", // Available on all routes
   });
@@ -48,10 +48,11 @@ function setAuthCookie(res: Response, token: string) {
  * Clear auth cookie
  */
 function clearAuthCookie(res: Response) {
+  const isProduction = process.env.NODE_ENV === "production";
   res.clearCookie(COOKIE_NAME, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    secure: isProduction,
+    sameSite: isProduction ? "strict" : "lax",
     path: "/",
   });
 }

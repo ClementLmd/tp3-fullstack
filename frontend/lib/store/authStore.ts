@@ -6,28 +6,28 @@ import { apiClient } from "../api/client";
 
 interface AuthState {
   user: User | null;
-  token: string | null;
   // Set authentication state (called after login/signup)
-  setAuth: (user: User, token: string) => void;
+  // Token is stored in httpOnly cookie, not in client state
+  setAuth: (user: User) => void; // Token parameter removed - token is in httpOnly cookie
   // Clears authentication state (async to call backend logout endpoint)
   logout: () => Promise<void>;
-  // Initialize from localStorage (token + user)
+  // Initialize from localStorage (user data)
   initialize: () => void;
   isAuthenticated: boolean;
 }
 
-// Persisted auth store: stores `user` and `token` in localStorage under `auth-storage`
+// Persisted auth store: stores `user` in localStorage under `auth-storage`
+// Token is stored in httpOnly cookie (set by backend), not in client state
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
-      token: null,
       isAuthenticated: false,
-      setAuth: (user, token) => {
-        // Token is now stored in httpOnly cookie (set by backend)
-        // Only store user data in state/localStorage, NOT the token
+      setAuth: (user) => {
+        // Token is stored in httpOnly cookie (set by backend)
+        // Only store user data in state/localStorage
         // Zustand persist middleware will automatically save to localStorage
-        set({ user, token: null, isAuthenticated: true }); // token is null, stored in cookie
+        set({ user, isAuthenticated: true });
       },
       logout: async () => {
         // Call backend logout endpoint (fire and forget - don't block UI on error)
@@ -43,10 +43,10 @@ export const useAuthStore = create<AuthState>()(
 
         // Clear local state regardless of API call result
         // Cookie is cleared server-side by logout endpoint
-        set({ user: null, token: null, isAuthenticated: false });
+        set({ user: null, isAuthenticated: false });
         try {
           localStorage.removeItem("user");
-          localStorage.removeItem("token"); // Cleanup old token if exists
+          localStorage.removeItem("token"); // Cleanup old token if exists (legacy)
           // Clear react-query cache on logout so no stale, user-specific data remains
           try {
             queryClient.clear();

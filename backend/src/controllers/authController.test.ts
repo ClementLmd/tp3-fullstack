@@ -80,12 +80,14 @@ describe('Auth Controller', () => {
       );
 
       // Verify cookie was set
+      // In development, sameSite is "lax", in production it's "strict"
+      const expectedSameSite = process.env.NODE_ENV === 'production' ? 'strict' : 'lax';
       expect(mockResponse.cookie).toHaveBeenCalledWith(
         COOKIE_NAME,
         expect.any(String),
         expect.objectContaining({
           httpOnly: true,
-          sameSite: 'strict',
+          sameSite: expectedSameSite,
         })
       );
 
@@ -274,11 +276,13 @@ describe('Auth Controller', () => {
       await logout(mockRequest as Request, mockResponse as Response);
 
       // Verify cookie was cleared
+      // In development, sameSite is "lax", in production it's "strict"
+      const expectedSameSite = process.env.NODE_ENV === 'production' ? 'strict' : 'lax';
       expect(mockResponse.clearCookie).toHaveBeenCalledWith(
         COOKIE_NAME,
         expect.objectContaining({
           httpOnly: true,
-          sameSite: 'strict',
+          sameSite: expectedSameSite,
           path: '/',
         })
       );

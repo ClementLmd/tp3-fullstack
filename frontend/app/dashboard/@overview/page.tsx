@@ -4,6 +4,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
 import { useAuthStore } from '@/lib/store/authStore';
+import StatCard from '@/components/dashboard/StatCard';
 
 interface TeacherStats {
   role: string;
@@ -109,30 +110,4 @@ export default function OverviewSlot() {
   }
 
   return null;
-}
-
-function StatCard({ 
-  title, 
-  value, 
-  icon,
-  color 
-}: { 
-  title: string; 
-  value: number; 
-  icon: string;
-  color: string;
-}) {
-  return (
-    <div className={`stat-card hover:scale-105 hover:shadow-lg transition-all duration-300 bg-gradient-to-br ${color} bg-opacity-10`}>
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-slate-300 text-sm font-medium">{title}</p>
-          <p className="text-4xl font-black bg-gradient-to-r from-slate-200 to-slate-100 bg-clip-text text-transparent mt-2">
-            {value}
-          </p>
-        </div>
-        <div className="text-4xl opacity-70 animate-bounce">{icon}</div>
-      </div>
-    </div>
-  );
 }

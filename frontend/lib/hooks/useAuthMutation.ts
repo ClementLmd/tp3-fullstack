@@ -43,7 +43,7 @@ export function useAuthMutation(mode: "login" | "signup"): AuthMutationResult {
       // Token is stored in httpOnly cookie by the backend (not in response body)
       // Only store user data in client state
       // Zustand persist middleware will automatically save to localStorage
-      setAuth(data.user, ""); // Token not needed in client state, it's in cookie
+      setAuth(data.user); // Token is in httpOnly cookie, not stored in client state
 
       // Invalidate queries that may contain unauthenticated data, and refetch
       // any user-specific queries now that we have auth information.

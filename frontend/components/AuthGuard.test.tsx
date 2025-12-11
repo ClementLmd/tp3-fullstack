@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import { useRouter } from "next/navigation";
 import AuthGuard from "./AuthGuard";
 import { useAuthStore } from "@/lib/store/authStore";
@@ -38,19 +38,22 @@ describe("AuthGuard", () => {
           email: "test@example.com",
           role: UserRole.TEACHER,
         },
-        token: "mock-token", // Token must be truthy for component to render
+        isAuthenticated: true, // Token is in httpOnly cookie, check isAuthenticated instead
         initialize: mockInitialize,
         logout: mockLogout,
       };
       return selector ? selector(mockState) : mockState;
     });
 
-    render(
-      <AuthGuard>
-        <div>Protected Content</div>
-      </AuthGuard>
-    );
+    act(() => {
+      render(
+        <AuthGuard>
+          <div>Protected Content</div>
+        </AuthGuard>
+      );
+    });
 
+    // Initialize is called synchronously in useEffect
     expect(screen.getByText("Protected Content")).toBeInTheDocument();
     expect(mockReplace).not.toHaveBeenCalled();
   });
@@ -62,19 +65,22 @@ describe("AuthGuard", () => {
     (useAuthStore as unknown as jest.Mock).mockImplementation((selector) => {
       const mockState = {
         user: null,
-        token: null,
+        isAuthenticated: false,
         initialize: mockInitialize,
         logout: mockLogout,
       };
       return selector ? selector(mockState) : mockState;
     });
 
-    render(
-      <AuthGuard>
-        <div>Protected Content</div>
-      </AuthGuard>
-    );
+    act(() => {
+      render(
+        <AuthGuard>
+          <div>Protected Content</div>
+        </AuthGuard>
+      );
+    });
 
+    // Initialize is called synchronously in useEffect
     expect(screen.queryByText("Protected Content")).not.toBeInTheDocument();
     expect(mockReplace).toHaveBeenCalledWith("/login");
   });
@@ -90,7 +96,7 @@ describe("AuthGuard", () => {
           email: "test@example.com",
           role: UserRole.STUDENT, // Student trying to access teacher route
         },
-        token: "mock-token", // Token must be truthy to pass first check
+        isAuthenticated: true, // User is authenticated but wrong role
         initialize: mockInitialize,
         logout: mockLogout,
       };
@@ -103,8 +109,8 @@ describe("AuthGuard", () => {
       </AuthGuard>
     );
 
-    // Wait for async logout
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    // Wait for initialization and async logout
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
     expect(mockLogout).toHaveBeenCalled();
     expect(mockReplace).toHaveBeenCalledWith("/login");
@@ -121,19 +127,22 @@ describe("AuthGuard", () => {
           email: "test@example.com",
           role: UserRole.TEACHER,
         },
-        token: "mock-token", // Token must be truthy for component to render
+        isAuthenticated: true, // User is authenticated with correct role
         initialize: mockInitialize,
         logout: mockLogout,
       };
       return selector ? selector(mockState) : mockState;
     });
 
-    render(
-      <AuthGuard roles={[UserRole.TEACHER]}>
-        <div>Teacher Content</div>
-      </AuthGuard>
-    );
+    act(() => {
+      render(
+        <AuthGuard roles={[UserRole.TEACHER]}>
+          <div>Teacher Content</div>
+        </AuthGuard>
+      );
+    });
 
+    // Initialize is called synchronously in useEffect
     expect(screen.getByText("Teacher Content")).toBeInTheDocument();
     expect(mockReplace).not.toHaveBeenCalled();
   });
