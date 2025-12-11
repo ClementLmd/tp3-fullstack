@@ -2,10 +2,11 @@ import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { pool } from "./db/connection";
-import authRoutes from './routes/auth';
-import quizRoutes from './routes/quiz';
+import authRoutes from "./routes/auth";
+import quizRoutes from "./routes/quiz";
 
 dotenv.config();
 
@@ -21,16 +22,25 @@ const io = new Server(httpServer, {
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
+// CORS configuration: allow credentials (cookies) from frontend
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    credentials: true, // Allow cookies to be sent
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 app.use(express.json());
+app.use(cookieParser()); // Parse cookies from requests
 
 // Authentication routes mounted at /auth to separate concerns
 // Exposes: POST /auth/signup and POST /auth/login
-app.use('/auth', authRoutes);
+app.use("/auth", authRoutes);
 
 // Quiz management routes mounted at /api/quizzes
 // Requires authentication and teacher role
-app.use('/api/quizzes', quizRoutes);
+app.use("/api/quizzes", quizRoutes);
 
 // Routes
 app.get("/health", (req, res) => {

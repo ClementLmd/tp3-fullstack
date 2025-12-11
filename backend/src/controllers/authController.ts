@@ -12,6 +12,7 @@ import {
 
 const JWT_SECRET = process.env.JWT_SECRET || "default-secret";
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "2h";
+export const COOKIE_NAME = "auth_token"; // Export for use in middleware
 
 /**
  * Generate a signed JWT for the given user. Only non-sensitive fields are included.
@@ -22,6 +23,37 @@ function generateToken(user: User): string {
   return jwt.sign({ userId: user.id, role: user.role }, secret, {
     expiresIn: JWT_EXPIRES_IN,
   } as jwt.SignOptions);
+}
+
+/**
+ * Set httpOnly cookie with JWT token
+ * httpOnly prevents JavaScript access (XSS protection)
+ * Secure flag ensures cookie only sent over HTTPS in production
+ * SameSite=Strict prevents CSRF attacks
+ */
+function setAuthCookie(res: Response, token: string) {
+  const isProduction = process.env.NODE_ENV === "production";
+  const maxAge = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+
+  res.cookie(COOKIE_NAME, token, {
+    httpOnly: true, // Prevents JavaScript access (XSS protection)
+    secure: isProduction, // Only send over HTTPS in production
+    sameSite: "strict", // CSRF protection
+    maxAge, // 2 hours
+    path: "/", // Available on all routes
+  });
+}
+
+/**
+ * Clear auth cookie
+ */
+function clearAuthCookie(res: Response) {
+  res.clearCookie(COOKIE_NAME, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+  });
 }
 
 /**
@@ -42,11 +74,9 @@ export async function signup(req: Request, res: Response) {
   // Password strength: at least 8 chars, one number and one letter
   const pwdStrong = /(?=.{8,})(?=.*\d)(?=.*[A-Za-z]).*/;
   if (!pwdStrong.test(password)) {
-    return res
-      .status(400)
-      .json({
-        error: "Password must be at least 8 characters and include a number.",
-      });
+    return res.status(400).json({
+      error: "Password must be at least 8 characters and include a number.",
+    });
   }
 
   // Normalize role
@@ -83,10 +113,20 @@ export async function signup(req: Request, res: Response) {
     };
 
     const token = generateToken(user);
-    const response: AuthResponse = { token, user, expiresIn: JWT_EXPIRES_IN };
+
+    // Set httpOnly cookie with token (more secure than localStorage)
+    setAuthCookie(res, token);
+
+    // Return user data (but NOT the token in response body for security)
+    // Token is now only accessible via httpOnly cookie
+    const response: AuthResponse = {
+      token: "",
+      user,
+      expiresIn: JWT_EXPIRES_IN,
+    };
     return res.status(201).json(response);
-  } catch (err: any) {
-    if (err?.code === "23505") {
+  } catch (err: unknown) {
+    if ((err as { code?: string })?.code === "23505") {
       // Unique violation: email already exists
       return res.status(409).json({ error: "Email already exists." });
     }
@@ -136,7 +176,17 @@ export async function login(req: Request, res: Response) {
     };
 
     const token = generateToken(user);
-    const response: AuthResponse = { token, user, expiresIn: JWT_EXPIRES_IN };
+
+    // Set httpOnly cookie with token (more secure than localStorage)
+    setAuthCookie(res, token);
+
+    // Return user data (but NOT the token in response body for security)
+    // Token is now only accessible via httpOnly cookie
+    const response: AuthResponse = {
+      token: "",
+      user,
+      expiresIn: JWT_EXPIRES_IN,
+    };
     return res.status(200).json(response);
   } catch (err) {
     console.error("Login error", err);
@@ -153,22 +203,10 @@ export async function login(req: Request, res: Response) {
  */
 export async function logout(req: Request, res: Response) {
   try {
-    // With stateless JWT, logout is primarily client-side
-    // This endpoint exists for API consistency and potential future token blacklisting
-    // The token will naturally expire based on its expiration time
+    // Clear the httpOnly cookie to log out the user
+    clearAuthCookie(res);
 
-    // Optional: Extract token for logging purposes
-    const authHeader = req.headers["authorization"];
-    const token = authHeader && authHeader.split(" ")[1];
-
-    // Log logout event (optional, for analytics/tracking)
-    if (token) {
-      // In a production system, you might want to:
-      // 1. Add token to a blacklist (Redis/database)
-      // 2. Log the logout event
-      // 3. Invalidate refresh tokens if using refresh token flow
-      console.log("User logged out");
-    }
+    console.log("User logged out");
 
     return res.status(200).json({ message: "Logged out successfully." });
   } catch (err) {
