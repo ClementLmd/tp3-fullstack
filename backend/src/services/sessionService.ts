@@ -3,6 +3,9 @@
  * Handles in-memory session state and connected users
  */
 
+// Configuration constants
+const ACCESS_CODE_LENGTH = 6;
+
 // In-memory store for active sessions
 // In production, this should be moved to Redis for scalability
 interface ActiveSession {
@@ -25,7 +28,7 @@ const accessCodeMap = new Map<string, string>(); // Map access code to session I
 export function generateAccessCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = '';
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < ACCESS_CODE_LENGTH; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return code;

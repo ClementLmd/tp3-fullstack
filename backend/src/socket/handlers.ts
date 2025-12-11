@@ -14,6 +14,12 @@ import {
 } from '../services/sessionService';
 import { Question, QuestionType } from 'shared';
 
+// Configuration constants
+const HIDDEN_CORRECT_ANSWER = -1;
+
+// Store active timers to prevent memory leaks
+const activeTimers = new Map<string, NodeJS.Timeout>();
+
 interface JoinSessionData {
   accessCode: string;
   userId: string;
@@ -27,6 +33,41 @@ interface JoinTeacherRoomData {
 interface AnswerData {
   questionId: string;
   answer: string;
+}
+
+/**
+ * Helper function to emit session updates to all users in a session
+ */
+function emitSessionUpdate(io: Server, sessionId: string): void {
+  const users = getConnectedUsers(sessionId);
+  io.to(`session:${sessionId}`).emit('sessionUpdate', {
+    connectedStudents: users.length,
+    students: users,
+  });
+}
+
+/**
+ * Clear timer for a session question
+ */
+function clearSessionTimer(sessionId: string, questionId: string): void {
+  const timerKey = `${sessionId}:${questionId}`;
+  const timer = activeTimers.get(timerKey);
+  if (timer) {
+    clearInterval(timer);
+    activeTimers.delete(timerKey);
+  }
+}
+
+/**
+ * Clear all timers for a session
+ */
+function clearAllSessionTimers(sessionId: string): void {
+  for (const [key, timer] of activeTimers.entries()) {
+    if (key.startsWith(`${sessionId}:`)) {
+      clearInterval(timer);
+      activeTimers.delete(key);
+    }
+  }
 }
 
 /**
@@ -57,11 +98,7 @@ export function setupSocketHandlers(io: Server): void {
         console.log(`Teacher joined session room: ${sessionId}`);
         
         // Send current connected users count
-        const users = getConnectedUsers(sessionId);
-        socket.emit('sessionUpdate', { 
-          connectedStudents: users.length,
-          students: users,
-        });
+        emitSessionUpdate(io, sessionId);
       } catch (err) {
         console.error('Join teacher room error:', err);
         socket.emit('error', { message: 'Failed to join teacher room.' });
@@ -131,11 +168,7 @@ export function setupSocketHandlers(io: Server): void {
         });
 
         // Notify teacher about new student
-        const users = getConnectedUsers(session.sessionId);
-        io.to(`session:${session.sessionId}`).emit('sessionUpdate', {
-          connectedStudents: users.length,
-          students: users,
-        });
+        emitSessionUpdate(io, session.sessionId);
       } catch (err) {
         console.error('Join session error:', err);
         socket.emit('error', { message: 'Failed to join session.' });
@@ -168,7 +201,7 @@ export function setupSocketHandlers(io: Server): void {
           type: question.type,
           options: question.options ? {
             choices: question.options.choices,
-            correctAnswer: -1, // Hide correct answer from students
+            correctAnswer: HIDDEN_CORRECT_ANSWER,
           } : undefined,
           order: question.order,
           points: question.points,
@@ -180,18 +213,24 @@ export function setupSocketHandlers(io: Server): void {
 
         console.log(`Question broadcasted to session ${sessionId}:`, question.id);
 
+        // Clear any existing timer for this session/question
+        clearSessionTimer(sessionId, question.id);
+
         // If there's a time limit, start a timer
         if (question.timeLimit) {
           let timeLeft = question.timeLimit;
+          const timerKey = `${sessionId}:${question.id}`;
           const timerInterval = setInterval(() => {
             timeLeft -= 1;
             io.to(`session:${sessionId}`).emit('timerUpdate', { timeLeft });
 
             if (timeLeft <= 0) {
               clearInterval(timerInterval);
+              activeTimers.delete(timerKey);
               io.to(`session:${sessionId}`).emit('timeUp', { questionId: question.id });
             }
           }, 1000);
+          activeTimers.set(timerKey, timerInterval);
         }
       } catch (err) {
         console.error('Broadcast question error:', err);
@@ -222,23 +261,23 @@ export function setupSocketHandlers(io: Server): void {
           return;
         }
 
-        const question = questionResult.rows[0];
+        const questionRow = questionResult.rows[0];
         let isCorrect = false;
         let pointsEarned = 0;
 
         // Check if answer is correct
-        if (question.type === QuestionType.MULTIPLE_CHOICE) {
-          const options = question.options;
+        if (questionRow.type === QuestionType.MULTIPLE_CHOICE) {
+          const options = questionRow.options;
           const answerIndex = parseInt(answer);
           isCorrect = answerIndex === options.correctAnswer;
-        } else if (question.type === QuestionType.TRUE_FALSE) {
-          isCorrect = answer.toLowerCase() === question.correct_answer.toLowerCase();
-        } else if (question.type === QuestionType.TEXT) {
-          isCorrect = answer.trim().toLowerCase() === question.correct_answer.trim().toLowerCase();
+        } else if (questionRow.type === QuestionType.TRUE_FALSE) {
+          isCorrect = answer.toLowerCase() === questionRow.correct_answer.toLowerCase();
+        } else if (questionRow.type === QuestionType.TEXT) {
+          isCorrect = answer.trim().toLowerCase() === questionRow.correct_answer.trim().toLowerCase();
         }
 
         if (isCorrect) {
-          pointsEarned = question.points;
+          pointsEarned = questionRow.points;
         }
 
         // Save answer to database
@@ -349,7 +388,7 @@ export function setupSocketHandlers(io: Server): void {
      */
     socket.on('leaveSession', () => {
       if (socket.data.sessionId) {
-        handleDisconnect(socket);
+        handleDisconnect(socket, io);
       }
     });
 
@@ -357,7 +396,7 @@ export function setupSocketHandlers(io: Server): void {
      * Handle disconnect
      */
     socket.on('disconnect', () => {
-      handleDisconnect(socket);
+      handleDisconnect(socket, io);
       console.log('Client disconnected:', socket.id);
     });
   });
@@ -366,19 +405,24 @@ export function setupSocketHandlers(io: Server): void {
 /**
  * Handle user disconnection from session
  */
-function handleDisconnect(socket: Socket): void {
-  if (socket.data.sessionId && !socket.data.isTeacher) {
+function handleDisconnect(socket: Socket, io: Server): void {
+  if (socket.data.sessionId) {
     const sessionId = socket.data.sessionId;
-    removeUserFromSession(sessionId, socket.id);
-
-    // Notify teacher about user leaving
-    const users = getConnectedUsers(sessionId);
-    socket.to(`session:${sessionId}`).emit('sessionUpdate', {
-      connectedStudents: users.length,
-      students: users,
-    });
-
-    console.log(`User ${socket.data.userName} left session: ${sessionId}`);
+    
+    // Clear all timers for teacher disconnection
+    if (socket.data.isTeacher) {
+      clearAllSessionTimers(sessionId);
+    }
+    
+    // Remove user from session if they're a student
+    if (!socket.data.isTeacher) {
+      removeUserFromSession(sessionId, socket.id);
+      
+      // Notify teacher about user leaving
+      emitSessionUpdate(io, sessionId);
+      
+      console.log(`User ${socket.data.userName} left session: ${sessionId}`);
+    }
   }
   
   socket.leave(`session:${socket.data.sessionId}`);

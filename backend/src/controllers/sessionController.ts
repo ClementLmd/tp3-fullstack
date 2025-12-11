@@ -16,6 +16,9 @@ import {
   isAccessCodeInUse,
 } from '../services/sessionService';
 
+// Configuration constants
+const MAX_ACCESS_CODE_ATTEMPTS = 10;
+
 /**
  * POST /api/sessions
  * Create a new session for a quiz
@@ -41,12 +44,12 @@ export async function createSession(req: AuthRequest, res: Response) {
     // Generate unique access code
     let accessCode = generateAccessCode();
     let attempts = 0;
-    while (isAccessCodeInUse(accessCode) && attempts < 10) {
+    while (isAccessCodeInUse(accessCode) && attempts < MAX_ACCESS_CODE_ATTEMPTS) {
       accessCode = generateAccessCode();
       attempts++;
     }
 
-    if (attempts >= 10) {
+    if (attempts >= MAX_ACCESS_CODE_ATTEMPTS) {
       return res.status(500).json({ error: 'Failed to generate unique access code.' });
     }
 
