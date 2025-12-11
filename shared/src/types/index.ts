@@ -46,7 +46,8 @@ export interface Quiz {
   creatorId: string;
   createdAt: string;
   updatedAt: string;
-  questions?: Question[];
+  questions?: Question[]; // Full question objects (when fetching single quiz)
+  questionCount?: number; // Count of questions (when fetching quiz list)
 }
 
 // Session types

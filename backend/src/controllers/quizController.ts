@@ -72,10 +72,19 @@ function prepareQuestionOptions(question: any): string | null {
 export async function listQuizzes(req: AuthRequest, res: Response) {
   try {
     const result = await query(
-      `SELECT id, title, description, creator_id, created_at, updated_at 
-       FROM quizzes 
-       WHERE creator_id = $1 
-       ORDER BY created_at DESC`,
+      `SELECT 
+         q.id, 
+         q.title, 
+         q.description, 
+         q.creator_id, 
+         q.created_at, 
+         q.updated_at,
+         COUNT(qu.id) as question_count
+       FROM quizzes q
+       LEFT JOIN questions qu ON q.id = qu.quiz_id
+       WHERE q.creator_id = $1 
+       GROUP BY q.id, q.title, q.description, q.creator_id, q.created_at, q.updated_at
+       ORDER BY q.created_at DESC`,
       [req.userId]
     );
 
@@ -86,6 +95,7 @@ export async function listQuizzes(req: AuthRequest, res: Response) {
       creatorId: row.creator_id,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
+      questionCount: parseInt(row.question_count) || 0,
     }));
 
     return res.status(200).json(quizzes);

@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import AuthGuard from '../../../components/AuthGuard';
-import { useQuizzes, useDeleteQuiz } from '../../../lib/hooks/useQuizzes';
-import { UserRole } from 'shared/src/types';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import AuthGuard from "../../../components/AuthGuard";
+import { useQuizzes, useDeleteQuiz } from "../../../lib/hooks/useQuizzes";
+import { UserRole } from "shared/src/types";
 
 export default function QuizzesPage() {
   const router = useRouter();
@@ -13,7 +13,11 @@ export default function QuizzesPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`Are you sure you want to delete the quiz "${title}"? This action cannot be undone.`)) {
+    if (
+      !confirm(
+        `Are you sure you want to delete the quiz "${title}"? This action cannot be undone.`
+      )
+    ) {
       return;
     }
 
@@ -21,8 +25,8 @@ export default function QuizzesPage() {
     try {
       await deleteQuiz.mutateAsync(id);
     } catch (err) {
-      console.error('Failed to delete quiz:', err);
-      alert('Failed to delete quiz. Please try again.');
+      console.error("Failed to delete quiz:", err);
+      alert("Failed to delete quiz. Please try again.");
     } finally {
       setDeletingId(null);
     }
@@ -38,17 +42,19 @@ export default function QuizzesPage() {
               <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
                 My Quizzes
               </h1>
-              <p className="text-slate-300 mt-2">Create and manage your quiz collection</p>
+              <p className="text-slate-300 mt-2">
+                Create and manage your quiz collection
+              </p>
             </div>
             <div className="flex gap-4">
               <button
-                onClick={() => router.push('/')}
+                onClick={() => router.push("/")}
                 className="px-6 py-3 bg-gradient-to-r from-slate-600 to-slate-700 text-white rounded-lg font-semibold shadow-lg hover:from-slate-700 hover:to-slate-800 transition transform hover:scale-105"
               >
                 ← Back to Home
               </button>
               <button
-                onClick={() => router.push('/teacher/quizzes/new')}
+                onClick={() => router.push("/teacher/quizzes/new")}
                 className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold shadow-lg hover:from-blue-700 hover:to-cyan-700 transition transform hover:scale-105"
               >
                 + Create New Quiz
@@ -66,18 +72,26 @@ export default function QuizzesPage() {
 
           {error && (
             <div className="bg-red-900/30 border border-red-500/50 rounded-lg p-6 text-center">
-              <p className="text-red-400 font-semibold">Failed to load quizzes</p>
-              <p className="text-slate-300 mt-2">Please try refreshing the page</p>
+              <p className="text-red-400 font-semibold">
+                Failed to load quizzes
+              </p>
+              <p className="text-slate-300 mt-2">
+                Please try refreshing the page
+              </p>
             </div>
           )}
 
           {!isLoading && !error && quizzes && quizzes.length === 0 && (
             <div className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-2xl p-12 text-center border border-blue-400/30">
               <div className="text-6xl mb-4">📝</div>
-              <h2 className="text-2xl font-bold text-blue-300 mb-2">No quizzes yet</h2>
-              <p className="text-slate-300 mb-6">Create your first quiz to get started</p>
+              <h2 className="text-2xl font-bold text-blue-300 mb-2">
+                No quizzes yet
+              </h2>
+              <p className="text-slate-300 mb-6">
+                Create your first quiz to get started
+              </p>
               <button
-                onClick={() => router.push('/teacher/quizzes/new')}
+                onClick={() => router.push("/teacher/quizzes/new")}
                 className="px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold shadow-lg hover:from-blue-700 hover:to-cyan-700 transition transform hover:scale-105"
               >
                 Create Your First Quiz
@@ -108,7 +122,10 @@ export default function QuizzesPage() {
                   <div className="flex items-center gap-4 mb-4 text-sm">
                     <div className="flex items-center gap-2 text-cyan-400">
                       <span className="font-semibold">📊</span>
-                      <span>{quiz.questions?.length || 0} questions</span>
+                      <span>
+                        {quiz.questionCount ?? quiz.questions?.length ?? 0}{" "}
+                        questions
+                      </span>
                     </div>
                   </div>
 
@@ -130,7 +147,7 @@ export default function QuizzesPage() {
                       disabled={deletingId === quiz.id}
                       className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-semibold hover:from-red-700 hover:to-red-800 transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {deletingId === quiz.id ? '...' : '🗑️'}
+                      {deletingId === quiz.id ? "..." : "🗑️"}
                     </button>
                   </div>
                 </div>
