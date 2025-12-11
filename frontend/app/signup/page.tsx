@@ -16,7 +16,7 @@ export default function SignupPage() {
   const initialize = useAuthStore((s) => s.initialize);
   useEffect(() => initialize(), [initialize]);
 
-  const mutation = useAuthMutation('signup');
+  const { mutate, isPending, error: mutationError } = useAuthMutation('signup');
 
   const [form, setForm] = useState<SignupPayload>({
     email: '',
@@ -25,7 +25,7 @@ export default function SignupPage() {
     lastName: '',
     role: 'STUDENT' as UserRole,
   });
-  const [error, setError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const validate = (): string | null => {
     if (!form.email || !form.password || !form.firstName || !form.lastName) return 'All fields required.';
@@ -52,101 +52,180 @@ export default function SignupPage() {
     e.preventDefault();
     const v = validate();
     if (v) {
-      setError(v);
+      setValidationError(v);
       return;
     }
-    setError(null);
-    mutation.mutate(form as SignupPayload);
+    setValidationError(null);
+    mutate(form as SignupPayload);
   };
 
+  const displayError = validationError || (mutationError?.message);
+
   return (
-    <div className="max-w-md mx-auto mt-12 p-8 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl border border-cyan-400/50">
-      <h2 className="text-4xl font-extrabold mb-2 text-center bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">Create your account</h2>
-      <p className="text-center text-slate-300 mb-8">Join Quiz Platform to host and participate in live quizzes</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-cyan-900 to-slate-950 flex items-center justify-center px-4 py-8">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -left-40 w-80 h-80 bg-cyan-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
-          <label className="block mb-2 text-sm font-semibold text-cyan-300">Email</label>
-          <input
-            type="email"
-            className="w-full bg-slate-700 border border-cyan-400/30 px-4 py-3 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition"
-            placeholder="your@email.com"
-            // HTML5 pattern for email — basic validation (frontend convenience only)
-            pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
-            title="Enter a valid email address"
-            value={form.email}
-            onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
-            required
-          />
-        </div>
-        <div>
-          <label className="block mb-2 text-sm font-semibold text-cyan-300">Password</label>
-          <input
-            type="password"
-            className="w-full bg-slate-700 border border-cyan-400/30 px-4 py-3 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition"
-            placeholder="••••••••"
-            // Removed HTML `pattern` because the browser can block the submit
-            // before our JS runs and logs helpful debug info. We validate in JS.
-            title="Minimum 8 characters, at least 1 number and 1 letter"
-            value={form.password}
-            onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))}
-            required
-          />
-          {/* Password requirements hint */}
-          <p className="text-xs text-slate-400 mt-1">Min 8 characters, at least 1 number and 1 letter</p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block mb-2 text-sm font-semibold text-cyan-300">First name</label>
-            <input
-              type="text"
-              className="w-full bg-slate-700 border border-cyan-400/30 px-4 py-3 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition"
-              placeholder="John"
-              value={form.firstName}
-              onChange={(e) => setForm(f => ({ ...f, firstName: e.target.value }))}
-              required
-            />
+      <div className="relative z-10 max-w-md w-full">
+        {/* Card */}
+        <div className="backdrop-blur-lg bg-white/10 border border-white/20 rounded-2xl shadow-2xl p-8 space-y-6">
+          {/* Header */}
+          <div className="text-center space-y-2">
+            <div className="text-5xl font-bold bg-gradient-to-r from-cyan-300 via-blue-300 to-cyan-400 bg-clip-text text-transparent">
+              Create Account
+            </div>
+            <p className="text-slate-300 text-sm">Join Quiz Platform and start learning</p>
           </div>
-          <div>
-            <label className="block mb-2 text-sm font-semibold text-cyan-300">Last name</label>
-            <input
-              type="text"
-              className="w-full bg-slate-700 border border-cyan-400/30 px-4 py-3 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition"
-              placeholder="Doe"
-              value={form.lastName}
-              onChange={(e) => setForm(f => ({ ...f, lastName: e.target.value }))}
-              required
-            />
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Email Field */}
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">
+                Email Address
+              </label>
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={form.email}
+                onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
+                className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition duration-200 backdrop-blur"
+                required
+              />
+            </div>
+
+            {/* Password Field */}
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">
+                Password
+              </label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={form.password}
+                onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))}
+                className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition duration-200 backdrop-blur"
+                required
+              />
+              <p className="text-xs text-slate-400">Min 8 characters, at least 1 number and 1 letter</p>
+            </div>
+
+            {/* Name Fields */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="John"
+                  value={form.firstName}
+                  onChange={(e) => setForm(f => ({ ...f, firstName: e.target.value }))}
+                  className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition duration-200 backdrop-blur"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="Doe"
+                  value={form.lastName}
+                  onChange={(e) => setForm(f => ({ ...f, lastName: e.target.value }))}
+                  className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition duration-200 backdrop-blur"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Role Field */}
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">
+                Account Type
+              </label>
+              <select
+                value={form.role}
+                onChange={(e) => setForm(f => ({ ...f, role: e.target.value as UserRole }))}
+                className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition duration-200 backdrop-blur cursor-pointer"
+              >
+                <option value="STUDENT" className="bg-slate-900">Student</option>
+                <option value="TEACHER" className="bg-slate-900">Teacher</option>
+              </select>
+            </div>
+
+            {/* Error Message */}
+            {displayError && (
+              <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 text-red-300 text-sm font-medium animate-pulse">
+                {displayError}
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isPending}
+              className="w-full relative group overflow-hidden rounded-lg font-semibold py-3 px-4 transition-all duration-300"
+            >
+              {/* Button background with gradient */}
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-600 transition-all duration-300 group-hover:scale-105"></div>
+              
+              {/* Animated shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500"></div>
+
+              {/* Disabled state */}
+              {isPending && (
+                <div className="absolute inset-0 bg-black/30"></div>
+              )}
+
+              {/* Button content */}
+              <div className="relative flex items-center justify-center gap-2">
+                {isPending ? (
+                  <>
+                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Creating account...</span>
+                  </>
+                ) : (
+                  <span>Create Account</span>
+                )}
+              </div>
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div className="relative flex items-center">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+          </div>
+
+          {/* Login Link */}
+          <div className="text-center">
+            <p className="text-slate-300 text-sm">
+              Already have an account?{' '}
+              <a href="/login" className="font-semibold bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent hover:opacity-80 transition">
+                Sign in
+              </a>
+            </p>
+          </div>
+
+          {/* Back to home link */}
+          <div className="text-center">
+            <a href="/" className="text-xs text-slate-400 hover:text-slate-300 transition">
+              ← Back to home
+            </a>
           </div>
         </div>
 
-        <div>
-          <label className="block mb-2 text-sm font-semibold text-cyan-300">Role</label>
-          <select
-            className="w-full bg-slate-700 border border-cyan-400/30 px-4 py-3 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition"
-            value={form.role}
-            onChange={(e) => setForm(f => ({ ...f, role: e.target.value as UserRole }))}
-          >
-          <option value="STUDENT" className="bg-slate-800">Student</option>
-            <option value="TEACHER" className="bg-slate-800">Teacher</option>
-          </select>
-        </div>
-
-        {error && <div className="text-red-400 text-sm font-medium bg-red-900/30 border border-red-500/50 p-3 rounded-lg">{error}</div>}
-
-        <button
-          type="submit"
-          className="w-full bg-gradient-to-r from-cyan-600 to-cyan-700 text-white py-3 rounded-lg font-bold shadow-lg hover:from-cyan-700 hover:to-cyan-800 transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={(mutation as any).isLoading}
-        >
-          {(mutation as any).isLoading ? 'Creating...' : 'Sign Up'}
-        </button>
-      </form>
-
-      {/* Link to login page */}
-      <div className="mt-6 text-center">
-        <p className="text-slate-300">Already have an account? <a className="text-blue-400 font-semibold hover:text-blue-300 transition" href="/login">Log in</a></p>
+        {/* Footer text */}
+        <p className="text-center text-slate-400 text-xs mt-6">
+          Test credentials: student1@example.com / student123
+        </p>
       </div>
     </div>
   );

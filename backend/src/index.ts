@@ -5,6 +5,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { pool } from "./db/connection";
+import dashboardRoutes from "./routes/dashboard";
 import authRoutes from "./routes/auth";
 import quizRoutes from "./routes/quiz";
 
@@ -41,6 +42,10 @@ app.use("/auth", authRoutes);
 // Quiz management routes mounted at /api/quizzes
 // Requires authentication and teacher role
 app.use("/api/quizzes", quizRoutes);
+
+// Dashboard routes mounted at /dashboard with authentication
+// All endpoints require valid JWT token
+app.use('/dashboard', dashboardRoutes);
 
 // Routes
 app.get("/health", (req, res) => {

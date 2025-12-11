@@ -8,13 +8,10 @@ import useAuthMutation from "../lib/hooks/useAuthMutation";
 import type { LoginPayload } from "shared/src/types/auth";
 
 /**
- * Home component - Main landing page for Quiz Platform
- * Displays different UI based on authentication state:
- * - Unauthenticated: Shows login/signup call-to-action buttons
- * - Authenticated: Shows user profile and logout button only
+ * Home page - Landing page with login/signup/dashboard buttons
+ * Shows buttons for unauthenticated users, auto-redirects authenticated users
  */
 export default function Home() {
-  // Extract auth state from Zustand store (user, logout method, auth status)
   const { user, initialize, logout, isAuthenticated } = useAuthStore((s) => ({
     user: s.user,
     initialize: s.initialize,
@@ -22,11 +19,15 @@ export default function Home() {
     isAuthenticated: s.isAuthenticated,
   }));
 
-  // Initialize auth from localStorage on client-side mount
   const router = useRouter();
+
   useEffect(() => {
-    if (typeof window !== "undefined") initialize();
-  }, [initialize]);
+    // Only initialize if user is not already loaded
+    // This prevents unnecessary re-initialization after login
+    if (typeof window !== "undefined" && !user) {
+      initialize();
+    }
+  }, [initialize, user]);
 
   // Mutation for quick login
   const loginMutation = useAuthMutation("login");
@@ -35,8 +36,8 @@ export default function Home() {
   const handleQuickLogin = (role: "teacher" | "student") => {
     const credentials: LoginPayload =
       role === "teacher"
-        ? { email: "teacher@example.com", password: "teacher123" }
-        : { email: "student@example.com", password: "student123" };
+        ? { email: "teacher1@example.com", password: "teacher123" }
+        : { email: "student1@example.com", password: "student123" };
 
     loginMutation.mutate(credentials);
   };
@@ -60,7 +61,7 @@ export default function Home() {
           {/* Desktop navigation - hidden on mobile (md:block) */}
           <div className="hidden md:block">
             {/* Show logout + user info ONLY when authenticated */}
-            {isAuthenticated ? (
+            {isAuthenticated && (
               <div className="text-right bg-gradient-to-br from-blue-400/10 to-cyan-400/10 p-4 rounded-lg border border-blue-300/30">
                 {/* Display user's first and last name in cyan */}
                 <p className="text-sm text-slate-200">
@@ -90,21 +91,6 @@ export default function Home() {
                 >
                   Logout
                 </button>
-              </div>
-            ) : (
-              <div className="flex gap-4">
-                <Link
-                  href="/login"
-                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow hover:from-blue-700 hover:to-blue-800 transition"
-                >
-                  Log In
-                </Link>
-                <Link
-                  href="/signup"
-                  className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-cyan-700 text-white rounded-lg shadow hover:from-cyan-700 hover:to-cyan-800 transition"
-                >
-                  Sign Up
-                </Link>
               </div>
             )}
           </div>
@@ -233,6 +219,61 @@ export default function Home() {
               </Link>
             </div>
           </div>
+        )}
+
+        {/* Features Grid - shown only for unauthenticated users */}
+        {!isAuthenticated && (
+          <>
+            <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Feature 1 */}
+              <div className="backdrop-blur-lg bg-white/5 border border-white/20 rounded-xl p-8 hover:border-blue-400/50 transition-all duration-300 group">
+                <div className="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">
+                  🎯
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">
+                  Create Quizzes
+                </h3>
+                <p className="text-slate-400 text-sm">
+                  Design engaging quizzes with multiple question types and
+                  real-time session management
+                </p>
+              </div>
+
+              {/* Feature 2 */}
+              <div className="backdrop-blur-lg bg-white/5 border border-white/20 rounded-xl p-8 hover:border-cyan-400/50 transition-all duration-300 group">
+                <div className="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">
+                  ⚡
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">
+                  Live Sessions
+                </h3>
+                <p className="text-slate-400 text-sm">
+                  Host real-time quiz sessions with instant feedback and live
+                  participant tracking
+                </p>
+              </div>
+
+              {/* Feature 3 */}
+              <div className="backdrop-blur-lg bg-white/5 border border-white/20 rounded-xl p-8 hover:border-purple-400/50 transition-all duration-300 group">
+                <div className="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">
+                  📊
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Analytics</h3>
+                <p className="text-slate-400 text-sm">
+                  Track performance with detailed statistics and comprehensive
+                  dashboards
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="text-center mt-16 pt-12 border-t border-white/10">
+              <p className="text-slate-500 text-sm">
+                🚀 Ready to get started? Sign in with your account or create a
+                new one
+              </p>
+            </div>
+          </>
         )}
       </div>
     </main>
