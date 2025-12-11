@@ -37,10 +37,18 @@ apiClient.interceptors.response.use(
       // Don't redirect if:
       // 1. Already on login/signup page (let the form handle the error)
       // 2. The request was to /auth/login or /auth/signup (let useAuthMutation handle it)
-      const isAuthEndpoint = error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/auth/signup');
-      const isAuthPage = window.location.pathname === "/login" || window.location.pathname === "/signup";
-      
-      if (!isAuthEndpoint && !isAuthPage && window.location.pathname !== "/login") {
+      const isAuthEndpoint =
+        error.config?.url?.includes("/auth/login") ||
+        error.config?.url?.includes("/auth/signup");
+      const isAuthPage =
+        window.location.pathname === "/login" ||
+        window.location.pathname === "/signup";
+
+      if (
+        !isAuthEndpoint &&
+        !isAuthPage &&
+        window.location.pathname !== "/login"
+      ) {
         window.location.href = "/login";
       }
     }
