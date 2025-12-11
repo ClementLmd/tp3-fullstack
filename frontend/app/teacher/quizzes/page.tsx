@@ -118,6 +118,14 @@ export default function QuizzesPage() {
                   </p>
 
                   {/* Actions */}
+                  <div className="flex gap-2 mb-2">
+                    <button
+                      onClick={() => router.push(`/teacher/sessions/new?quizId=${quiz.id}`)}
+                      className="flex-1 px-4 py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg font-semibold hover:from-emerald-700 hover:to-emerald-800 transition text-sm"
+                    >
+                      🚀 Start Session
+                    </button>
+                  </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => router.push(`/teacher/quizzes/${quiz.id}`)}
