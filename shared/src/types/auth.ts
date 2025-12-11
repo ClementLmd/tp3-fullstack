@@ -36,7 +36,9 @@ export interface LoginPayload {
 }
 
 export interface AuthResponse {
-  token: string;
+  // Token is now stored in httpOnly cookie, not returned in response body
+  // Keeping token field optional for backward compatibility during migration
+  token?: string;
   user: User;
   // Optional human-readable expiry (e.g. '2h')
   expiresIn?: string;

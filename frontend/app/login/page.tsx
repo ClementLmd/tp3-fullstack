@@ -1,18 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import useAuthMutation from '../../lib/hooks/useAuthMutation';
-import { useAuthStore } from '../../lib/store/authStore';
-import type { LoginPayload } from 'shared/src/types/auth';
+import React, { useState, useEffect } from "react";
+import useAuthMutation from "../../lib/hooks/useAuthMutation";
+import { useAuthStore } from "../../lib/store/authStore";
+import type { LoginPayload } from "shared/src/types/auth";
 import Link from 'next/link';
 
 export default function LoginPage() {
   const initialize = useAuthStore((s) => s.initialize);
   useEffect(() => initialize(), [initialize]);
 
-  const { mutate, isPending, error } = useAuthMutation('login');
+  const { mutate, isPending, error } = useAuthMutation("login");
 
-  const [form, setForm] = useState<LoginPayload>({ email: '', password: '' });
+  const [form, setForm] = useState<LoginPayload>({ email: "", password: "" });
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 

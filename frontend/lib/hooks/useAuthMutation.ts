@@ -30,25 +30,17 @@ export function useAuthMutation(mode: 'login' | 'signup'): AuthMutationResult {
       return res.data;
     },
     onSuccess: (data: AuthResponse) => {
-      // Persist token and user in client state
-      setAuth(data.user, data.token);
+      // Token is stored in httpOnly cookie by the backend (not in response body)
+      // Only store user data in client state
+      setAuth(data.user, ""); // Token not needed in client state, it's in cookie
 
-      // Double-check token persistence in localStorage (redundant with store persist,
-      // but ensures apiClient interceptor can read it immediately)
+      // Store user data for UI state persistence
       try {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem("user", JSON.stringify(data.user));
+        // Remove old token from localStorage if it exists (migration cleanup)
+        localStorage.removeItem("token");
       } catch (e) {
-        console.warn('Unable to write token/user to localStorage', e);
-      }
-
-      // Ensure axios default Authorization header is set immediately so subsequent
-      // requests in the same session include the token without waiting for interceptors.
-      try {
-        apiClient.defaults.headers.common.Authorization = `Bearer ${data.token}`;
-      } catch (e) {
-        // ignore if apiClient not available
-        console.warn('Unable to set default Authorization header', e);
+        console.warn("Unable to write user to localStorage", e);
       }
 
       // Invalidate queries that may contain unauthenticated data, and refetch
@@ -56,16 +48,11 @@ export function useAuthMutation(mode: 'login' | 'signup'): AuthMutationResult {
       try {
         queryClient.invalidateQueries();
       } catch (e) {
-        console.warn('Unable to invalidate queries after auth', e);
+        console.warn("Unable to invalidate queries after auth", e);
       }
 
-      // Optionally store token in an HttpOnly cookie (server side recommended)
-      /*
-      document.cookie = `token=${data.token}; Path=/; Secure; SameSite=Strict; Max-Age=...`;
-      */
-
       // Redirect user after successful auth
-      router.push('/');
+      router.push("/");
     },
   });
 

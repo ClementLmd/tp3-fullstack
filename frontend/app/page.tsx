@@ -1,9 +1,11 @@
 "use client";
 
-import { useAuthStore } from '../lib/store/authStore';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import Link from "next/link";
+import { useAuthStore } from "../lib/store/authStore";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import useAuthMutation from "../lib/hooks/useAuthMutation";
+import type { LoginPayload } from "shared/src/types/auth";
 
 /**
  * Home page - Landing page with login/signup/dashboard buttons
@@ -19,36 +21,133 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      initialize();
-      setMounted(true);
-    }
+    if (typeof window !== "undefined") initialize();
   }, [initialize]);
 
-  // Auto-redirect authenticated users to dashboard
-  useEffect(() => {
-    if (mounted && isAuthenticated) {
-      router.replace('/dashboard');
-    }
-  }, [mounted, isAuthenticated, router]);
+  // Mutation for quick login
+  const loginMutation = useAuthMutation("login");
+
+  // Quick login handlers for mock accounts
+  const handleQuickLogin = (role: "teacher" | "student") => {
+    const credentials: LoginPayload =
+      role === "teacher"
+        ? { email: "teacher@example.com", password: "teacher123" }
+        : { email: "student@example.com", password: "student123" };
+
+    loginMutation.mutate(credentials);
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden flex items-center justify-center">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-500/30 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-cyan-500/30 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
-        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
-      </div>
+    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-8">
+      {/* Main card container with dark blue gradient */}
+      <div className="w-full max-w-4xl bg-gradient-to-br from-slate-800 via-slate-700 to-slate-800 rounded-2xl shadow-2xl p-10 border border-blue-400/30">
+        {/* Header section with branding and navigation */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            {/* Main heading with gradient text: light blue to cyan */}
+            <h1 className="text-5xl font-extrabold mb-2 bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
+              Quiz Platform
+            </h1>
+            {/* Subtitle in light gray */}
+            <p className="text-slate-300">
+              Real-time interactive quiz platform for teachers and students
+            </p>
+          </div>
+          {/* Desktop navigation - hidden on mobile (md:block) */}
+          <div className="hidden md:block">
+            {/* Show logout + user info ONLY when authenticated */}
+            {isAuthenticated ? (
+              <div className="text-right bg-gradient-to-br from-blue-400/10 to-cyan-400/10 p-4 rounded-lg border border-blue-300/30">
+                {/* Display user's first and last name in cyan */}
+                <p className="text-sm text-slate-200">
+                  Logged in as{" "}
+                  <span className="text-cyan-300 font-semibold">
+                    {user?.firstName} {user?.lastName}
+                  </span>
+                </p>
+                {/* Display user role in blue */}
+                <p className="text-sm text-slate-400">
+                  Role:{" "}
+                  <span className="text-blue-300 font-semibold">
+                    {user?.role}
+                  </span>
+                </p>
+                {/* Logout button with hover gradient effect */}
+                <button
+                  onClick={async () => {
+                    await logout();
+                    try {
+                      router.push("/");
+                    } catch (e) {
+                      window.location.href = "/";
+                    }
+                  }}
+                  className="mt-3 px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-semibold shadow-lg hover:from-red-700 hover:to-red-800 transition transform hover:scale-105"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-4">
+                <Link
+                  href="/login"
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow hover:from-blue-700 hover:to-blue-800 transition"
+                >
+                  Log In
+                </Link>
+                <Link
+                  href="/signup"
+                  className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-cyan-700 text-white rounded-lg shadow hover:from-cyan-700 hover:to-cyan-800 transition"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
 
-      {/* Content */}
-      <div className="relative z-10 max-w-5xl w-full mx-auto px-4">
-        {/* Hero Section */}
-        <div className="text-center mb-16 animate-fade-in-up">
-          <div className="inline-block mb-6">
-            <div className="text-7xl font-black mb-4 animate-bounce" style={{animationDelay: '0s'}}>
-              📚
-            </div>
+        {/* Feature cards section - only shown when authenticated */}
+        {isAuthenticated && (
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Card 1: Manage Quizzes (Teachers only) */}
+            {user?.role === "TEACHER" && (
+              <div
+                onClick={() => router.push("/teacher/quizzes")}
+                className="p-6 bg-gradient-to-br from-blue-500/20 to-cyan-500/10 rounded-lg border border-blue-400/50 hover:border-cyan-300 transition hover:shadow-lg cursor-pointer"
+              >
+                <h2 className="text-2xl font-bold mb-2 text-blue-300">
+                  📝 Manage Quizzes
+                </h2>
+                <p className="text-slate-300">
+                  Create, edit, and organize your quiz collection with multiple
+                  question types.
+                </p>
+              </div>
+            )}
+            {/* Card 2: Host Quiz feature (Teachers only) */}
+            {user?.role === "TEACHER" && (
+              <div className="p-6 bg-gradient-to-br from-purple-500/20 to-blue-500/10 rounded-lg border border-purple-400/50 hover:border-blue-300 transition hover:shadow-lg">
+                <h2 className="text-2xl font-bold mb-2 text-purple-300">
+                  🎯 Host a Quiz
+                </h2>
+                <p className="text-slate-300">
+                  Launch live quiz sessions for your students with real-time
+                  interaction and instant feedback.
+                </p>
+              </div>
+            )}
+            {/* Card 3: Join Quiz feature (Students) */}
+            {user?.role === "STUDENT" && (
+              <div className="p-6 bg-gradient-to-br from-cyan-500/20 to-blue-500/10 rounded-lg border border-cyan-400/50 hover:border-blue-300 transition hover:shadow-lg">
+                <h2 className="text-2xl font-bold mb-2 text-cyan-300">
+                  🚀 Join a Session
+                </h2>
+                <p className="text-slate-300">
+                  Join using an access code and participate in a live quiz
+                  session from any device.
+                </p>
+              </div>
+            )}
           </div>
           
           <h1 className="text-6xl md:text-7xl font-black mb-6 bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-400 bg-clip-text text-transparent leading-tight">
@@ -63,31 +162,83 @@ export default function Home() {
             Create engaging quiz sessions, participate in real-time, and track your progress instantly
           </p>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-12">
-            {/* Login Button */}
-            <Link
-              href="/login"
-              className="group relative w-full sm:w-auto overflow-hidden rounded-xl font-bold py-4 px-8 text-lg transition-all duration-300"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-700 transition-all duration-300 group-hover:scale-110"></div>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500"></div>
-              <div className="relative text-white flex items-center justify-center gap-2">
-                <span>🔐 Sign In</span>
+        {/* Quick Login Section - shown only for unauthenticated users */}
+        {!isAuthenticated && (
+          <div className="mt-8 space-y-6">
+            {/* Quick Login Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Teacher Quick Login */}
+              <div className="p-6 bg-gradient-to-br from-blue-500/20 to-blue-600/10 rounded-lg border border-blue-400/50 hover:border-blue-300 transition hover:shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-blue-300 mb-1">
+                      👨‍🏫 Teacher Account
+                    </h3>
+                    <p className="text-sm text-slate-400">
+                      teacher@example.com
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleQuickLogin("teacher")}
+                  disabled={loginMutation.isPending}
+                  className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold shadow-lg hover:from-blue-700 hover:to-blue-800 transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loginMutation.isPending
+                    ? "Connecting..."
+                    : "Quick Login as Teacher"}
+                </button>
               </div>
-            </Link>
 
-            {/* Signup Button */}
-            <Link
-              href="/signup"
-              className="group relative w-full sm:w-auto overflow-hidden rounded-xl font-bold py-4 px-8 text-lg transition-all duration-300"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-cyan-700 transition-all duration-300 group-hover:scale-110"></div>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500"></div>
-              <div className="relative text-white flex items-center justify-center gap-2">
-                <span>✨ Create Account</span>
+              {/* Student Quick Login */}
+              <div className="p-6 bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 rounded-lg border border-cyan-400/50 hover:border-cyan-300 transition hover:shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-cyan-300 mb-1">
+                      👨‍🎓 Student Account
+                    </h3>
+                    <p className="text-sm text-slate-400">
+                      student@example.com
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleQuickLogin("student")}
+                  disabled={loginMutation.isPending}
+                  className="w-full px-4 py-2 bg-gradient-to-r from-cyan-600 to-cyan-700 text-white rounded-lg font-semibold shadow-lg hover:from-cyan-700 hover:to-cyan-800 transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loginMutation.isPending
+                    ? "Connecting..."
+                    : "Quick Login as Student"}
+                </button>
               </div>
-            </Link>
+            </div>
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-600"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-slate-800 text-slate-400">Or</span>
+              </div>
+            </div>
+
+            {/* Regular Login/Signup Links */}
+            <div className="flex gap-4 justify-center">
+              <Link
+                href="/login"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-800 transition transform hover:scale-105"
+              >
+                Log In
+              </Link>
+              <Link
+                href="/signup"
+                className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-700 text-white font-semibold rounded-lg shadow-lg hover:from-cyan-700 hover:to-cyan-800 transition transform hover:scale-105"
+              >
+                Sign Up
+              </Link>
+            </div>
           </div>
 
           {/* Test Credentials Box */}
@@ -142,4 +293,3 @@ export default function Home() {
     </div>
   );
 }
-
