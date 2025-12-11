@@ -5,6 +5,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { pool } from "./db/connection";
 import authRoutes from './routes/auth';
+import dashboardRoutes from './routes/dashboard';
 
 dotenv.config();
 
@@ -26,6 +27,10 @@ app.use(express.json());
 // Authentication routes mounted at /auth to separate concerns
 // Exposes: POST /auth/signup and POST /auth/login
 app.use('/auth', authRoutes);
+
+// Dashboard routes mounted at /dashboard with authentication
+// All endpoints require valid JWT token
+app.use('/dashboard', dashboardRoutes);
 
 // Routes
 app.get("/health", (req, res) => {

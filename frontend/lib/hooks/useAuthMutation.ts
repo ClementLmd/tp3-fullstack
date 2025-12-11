@@ -5,19 +5,26 @@ import { useAuthStore } from '../store/authStore';
 import { queryClient } from '../providers/ReactQueryProvider';
 import type { SignupPayload, LoginPayload, AuthResponse } from 'shared/src/types/auth';
 
+interface AuthMutationResult {
+  mutate: (payload: LoginPayload | SignupPayload) => void;
+  isPending: boolean;
+  isError: boolean;
+  error: Error | null;
+}
+
 /**
  * useAuthMutation handles both signup and login flows.
  * - Calls backend `/auth/signup` or `/auth/login`
  * - On success stores token and user in Zustand + localStorage
  * - Demonstrates cookie storage (commented out)
  */
-export function useAuthMutation(mode: 'login' | 'signup') {
+export function useAuthMutation(mode: 'login' | 'signup'): AuthMutationResult {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
 
   const endpoint = mode === 'login' ? '/auth/login' : '/auth/signup';
 
-  return useMutation<AuthResponse, Error, LoginPayload | SignupPayload>({
+  const mutation = useMutation<AuthResponse, Error, LoginPayload | SignupPayload>({
     mutationFn: async (payload: LoginPayload | SignupPayload): Promise<AuthResponse> => {
       const res = await apiClient.post<AuthResponse>(endpoint, payload);
       return res.data;
@@ -62,6 +69,12 @@ export function useAuthMutation(mode: 'login' | 'signup') {
     },
   });
 
+  return {
+    mutate: mutation.mutate,
+    isPending: mutation.isPending,
+    isError: mutation.isError,
+    error: mutation.error,
+  };
 }
 
 export default useAuthMutation;
