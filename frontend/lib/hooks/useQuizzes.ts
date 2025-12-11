@@ -18,7 +18,7 @@ export interface UpdateQuizPayload extends CreateQuizPayload {
 export function useQuizzesRealtime() {
   const queryClient = useQueryClient();
 
-  return useSocketQuiz({
+  const socketOps = useSocketQuiz({
     enabled: true,
     onQuizCreated: (quiz) => {
       // Add new quiz to the cache
@@ -48,6 +48,8 @@ export function useQuizzesRealtime() {
       queryClient.removeQueries({ queryKey: ['quiz', quizId] });
     },
   });
+
+  return socketOps;
 }
 
 // Hook to fetch all quizzes for the teacher
@@ -77,7 +79,7 @@ export function useQuiz(id: string | null) {
 // Hook to create a new quiz (using socket.io)
 export function useCreateQuizSocket() {
   const queryClient = useQueryClient();
-  const { createQuiz, isConnected } = useSocketQuiz({ enabled: false });
+  const { createQuiz, isConnected } = useQuizzesRealtime();
 
   return useMutation<Quiz, Error, CreateQuizPayload>({
     mutationFn: async (payload: CreateQuizPayload) => {
@@ -103,7 +105,7 @@ export function useCreateQuizSocket() {
 // Hook to update an existing quiz (using socket.io)
 export function useUpdateQuizSocket() {
   const queryClient = useQueryClient();
-  const { updateQuiz, isConnected } = useSocketQuiz({ enabled: false });
+  const { updateQuiz, isConnected } = useQuizzesRealtime();
 
   return useMutation<Quiz, Error, UpdateQuizPayload>({
     mutationFn: async ({ id, ...payload }: UpdateQuizPayload) => {
@@ -130,7 +132,7 @@ export function useUpdateQuizSocket() {
 // Hook to delete a quiz (using socket.io)
 export function useDeleteQuizSocket() {
   const queryClient = useQueryClient();
-  const { deleteQuiz, isConnected } = useSocketQuiz({ enabled: false });
+  const { deleteQuiz, isConnected } = useQuizzesRealtime();
 
   return useMutation<void, Error, string>({
     mutationFn: async (id: string) => {
