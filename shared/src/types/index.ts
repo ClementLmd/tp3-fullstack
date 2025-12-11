@@ -122,11 +122,19 @@ export interface ServerToClientEvents {
   sessionEnded: () => void;
   timerUpdate: (timeLeft: number) => void;
   error: (message: string) => void;
+  // Quiz management events
+  quizCreated: (quiz: Quiz) => void;
+  quizUpdated: (quiz: Quiz) => void;
+  quizDeleted: (quizId: string) => void;
 }
 
 export interface ClientToServerEvents {
   joinSession: (data: { accessCode: string; userId: string }) => void;
   answer: (data: { questionId: string; answer: string }) => void;
   leaveSession: () => void;
+  // Quiz management events
+  createQuiz: (data: CreateQuizRequest, callback: (response: { success: boolean; quiz?: Quiz; error?: string }) => void) => void;
+  updateQuiz: (data: { quizId: string } & CreateQuizRequest, callback: (response: { success: boolean; quiz?: Quiz; error?: string }) => void) => void;
+  deleteQuiz: (data: { quizId: string }, callback: (response: { success: boolean; error?: string }) => void) => void;
 }
 

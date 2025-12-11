@@ -7,15 +7,19 @@ import dotenv from "dotenv";
 import { pool } from "./db/connection";
 import authRoutes from "./routes/auth";
 import quizRoutes from "./routes/quiz";
+import { authenticateSocket } from "./socket/auth";
+import { registerQuizHandlers } from "./socket/quizHandler";
+import { ServerToClientEvents, ClientToServerEvents } from "shared/src/types";
 
 dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
-const io = new Server(httpServer, {
+const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: {
     origin: process.env.FRONTEND_URL || "http://localhost:3000",
     methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
@@ -47,9 +51,16 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", message: "Quiz Platform API" });
 });
 
+// Socket.io authentication middleware
+io.use(authenticateSocket);
+
 // Socket.io connection
 io.on("connection", (socket) => {
-  console.log("Client connected:", socket.id);
+  const userId = (socket as unknown as { userId: string }).userId;
+  console.log("Client connected:", socket.id, "User:", userId);
+
+  // Register quiz management handlers
+  registerQuizHandlers(io, socket);
 
   socket.on("disconnect", () => {
     console.log("Client disconnected:", socket.id);
