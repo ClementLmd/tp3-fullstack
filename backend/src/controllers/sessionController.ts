@@ -41,16 +41,34 @@ export async function createSession(req: AuthRequest, res: Response) {
       return res.status(404).json({ error: 'Quiz not found or unauthorized.' });
     }
 
-    // Generate unique access code
+    // Generate unique access code (check both in-memory and database)
     let accessCode = generateAccessCode();
     let attempts = 0;
-    while (isAccessCodeInUse(accessCode) && attempts < MAX_ACCESS_CODE_ATTEMPTS) {
+    while (attempts < MAX_ACCESS_CODE_ATTEMPTS) {
+      // Check in-memory first
+      if (isAccessCodeInUse(accessCode)) {
+        accessCode = generateAccessCode();
+        attempts++;
+        continue;
+      }
+      
+      // Check database for active sessions with this code
+      const codeCheckResult = await query(
+        'SELECT id FROM sessions WHERE access_code = $1 AND is_active = true',
+        [accessCode]
+      );
+      
+      if (codeCheckResult.rows.length === 0) {
+        // Code is unique, break the loop
+        break;
+      }
+      
       accessCode = generateAccessCode();
       attempts++;
     }
 
     if (attempts >= MAX_ACCESS_CODE_ATTEMPTS) {
-      return res.status(500).json({ error: 'Failed to generate unique access code.' });
+      return res.status(500).json({ error: 'Failed to generate unique access code. Please try again.' });
     }
 
     // Create session in database

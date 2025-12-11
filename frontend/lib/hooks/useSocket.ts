@@ -24,9 +24,17 @@ export function useSocket(options: UseSocketOptions = {}) {
       return socketRef.current;
     }
 
+    // Disconnect existing socket if it exists
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+    }
+
     const socket = io(WS_URL, {
       transports: ['websocket', 'polling'],
       withCredentials: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
 
     socket.on('connect', () => {
@@ -35,8 +43,21 @@ export function useSocket(options: UseSocketOptions = {}) {
       setError(null);
     });
 
-    socket.on('disconnect', () => {
-      console.log('Socket disconnected');
+    socket.on('disconnect', (reason) => {
+      console.log('Socket disconnected:', reason);
+      setIsConnected(false);
+      
+      // Only set error if disconnect was not intentional
+      if (reason === 'io server disconnect' || reason === 'io client disconnect') {
+        // Intentional disconnect
+      } else {
+        console.warn('Socket disconnected unexpectedly:', reason);
+      }
+    });
+
+    socket.on('connect_error', (err) => {
+      console.error('Socket connection error:', err);
+      setError(err.message);
       setIsConnected(false);
     });
 
@@ -187,16 +208,24 @@ export function useStudentSocket() {
   const joinSession = useCallback(
     (accessCode: string, userId: string, userName: string) => {
       const socketInstance = connect();
-      socketInstance.emit('joinSession', { accessCode, userId, userName });
       
       return new Promise<{ sessionId: string; quizId: string; currentQuestionIndex: number }>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Connection timeout - please try again'));
+        }, 10000); // 10 second timeout
+
         socketInstance.once('joinedSession', (data) => {
+          clearTimeout(timeout);
           resolve(data);
         });
         
         socketInstance.once('error', (err) => {
+          clearTimeout(timeout);
           reject(new Error(err.message));
         });
+
+        // Emit join request after setting up listeners
+        socketInstance.emit('joinSession', { accessCode, userId, userName });
       });
     },
     [connect]

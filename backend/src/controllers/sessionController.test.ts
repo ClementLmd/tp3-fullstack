@@ -71,6 +71,11 @@ describe('Session Controller', () => {
       mockGenerateAccessCode.mockReturnValue(mockAccessCode);
       mockIsAccessCodeInUse.mockReturnValue(false);
 
+      // Mock database check for access code uniqueness (new query added)
+      mockQuery.mockResolvedValueOnce({
+        rows: [], // No existing sessions with this code
+      });
+
       // Mock session creation
       mockQuery.mockResolvedValueOnce({
         rows: [{
@@ -89,6 +94,12 @@ describe('Session Controller', () => {
       expect(mockQuery).toHaveBeenCalledWith(
         expect.stringContaining('SELECT id, title, creator_id FROM quizzes'),
         [validQuizId, 'teacher-123']
+      );
+
+      // Verify access code uniqueness was checked in database
+      expect(mockQuery).toHaveBeenCalledWith(
+        expect.stringContaining('SELECT id FROM sessions WHERE access_code'),
+        [mockAccessCode]
       );
 
       // Verify session was created in database
