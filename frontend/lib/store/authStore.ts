@@ -2,14 +2,15 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from 'shared/src/types/auth';
 import { queryClient } from '../providers/ReactQueryProvider';
+import { apiClient } from '../api/client';
 
 interface AuthState {
   user: User | null;
   token: string | null;
   // Set authentication state (called after login/signup)
   setAuth: (user: User, token: string) => void;
-  // Clears authentication state
-  logout: () => void;
+  // Clears authentication state (async to call backend logout endpoint)
+  logout: () => Promise<void>;
   // Initialize from localStorage (token + user)
   initialize: () => void;
   isAuthenticated: boolean;
@@ -33,11 +34,22 @@ export const useAuthStore = create<AuthState>()(
           console.warn('Unable to persist auth to localStorage', e);
         }
       },
-      logout: () => {
+      logout: async () => {
+        // Call backend logout endpoint (fire and forget - don't block UI on error)
+        try {
+          await apiClient.post('/auth/logout');
+        } catch (error) {
+          // Don't block logout if backend call fails - still clear local state
+          console.warn('Logout API call failed, but continuing with local logout', error);
+        }
+        
+        // Clear local state regardless of API call result
         set({ user: null, token: null, isAuthenticated: false });
         try {
           localStorage.removeItem('token');
           localStorage.removeItem('user');
+          // Clear Authorization header from axios defaults
+          delete apiClient.defaults.headers.common['Authorization'];
           // Clear react-query cache on logout so no stale, user-specific data remains
           try {
             queryClient.clear();

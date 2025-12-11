@@ -131,3 +131,36 @@ export async function login(req: Request, res: Response) {
     return res.status(500).json({ error: 'Internal server error.' });
   }
 }
+
+/**
+ * POST /auth/logout
+ * Logs out the user. With stateless JWT, this mainly serves for:
+ * - API consistency and logging
+ * - Future token blacklisting if needed
+ * The actual token invalidation happens client-side by removing it from storage.
+ */
+export async function logout(req: Request, res: Response) {
+  try {
+    // With stateless JWT, logout is primarily client-side
+    // This endpoint exists for API consistency and potential future token blacklisting
+    // The token will naturally expire based on its expiration time
+    
+    // Optional: Extract token for logging purposes
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    // Log logout event (optional, for analytics/tracking)
+    if (token) {
+      // In a production system, you might want to:
+      // 1. Add token to a blacklist (Redis/database)
+      // 2. Log the logout event
+      // 3. Invalidate refresh tokens if using refresh token flow
+      console.log('User logged out');
+    }
+    
+    return res.status(200).json({ message: 'Logged out successfully.' });
+  } catch (err) {
+    console.error('Logout error', err);
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
+}
