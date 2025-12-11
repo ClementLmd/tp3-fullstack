@@ -26,16 +26,8 @@ export const useAuthStore = create<AuthState>()(
       setAuth: (user, token) => {
         // Token is now stored in httpOnly cookie (set by backend)
         // Only store user data in state/localStorage, NOT the token
+        // Zustand persist middleware will automatically save to localStorage
         set({ user, token: null, isAuthenticated: true }); // token is null, stored in cookie
-        try {
-          // Store user data for UI state, but NOT the token (security)
-          localStorage.setItem("user", JSON.stringify(user));
-          // Remove old token from localStorage if it exists (migration cleanup)
-          localStorage.removeItem("token");
-        } catch (e) {
-          // localStorage might be disabled in some environments
-          console.warn("Unable to persist user to localStorage", e);
-        }
       },
       logout: async () => {
         // Call backend logout endpoint (fire and forget - don't block UI on error)
@@ -67,20 +59,14 @@ export const useAuthStore = create<AuthState>()(
         }
       },
       initialize: () => {
-        try {
-          // Token is now in httpOnly cookie, not accessible via JavaScript
-          // Only restore user data from localStorage for UI state
-          const userJson = localStorage.getItem("user");
-          if (userJson) {
-            const user: User = JSON.parse(userJson);
-            // Assume authenticated if user data exists (cookie will be validated on first API call)
-            // If cookie is invalid, API will return 401 and redirect to login
-            set({ user, token: null, isAuthenticated: true });
-          } else {
-            set({ user: null, token: null, isAuthenticated: false });
-          }
-        } catch (e) {
-          set({ user: null, token: null, isAuthenticated: false });
+        // Zustand persist middleware automatically restores state from localStorage
+        // This function ensures isAuthenticated is synced with user state
+        // Zustand persist restores the state on mount, so we just sync isAuthenticated
+        const currentState = useAuthStore.getState();
+        if (currentState.user && !currentState.isAuthenticated) {
+          set({ isAuthenticated: true });
+        } else if (!currentState.user && currentState.isAuthenticated) {
+          set({ isAuthenticated: false });
         }
       },
     }),

@@ -34,8 +34,13 @@ apiClient.interceptors.response.use(
     // Handle 401 Unauthorized - redirect to login
     // Cookie is cleared server-side, no need to clear localStorage
     if (error.response?.status === 401) {
-      // Only redirect if not already on login page
-      if (window.location.pathname !== "/login") {
+      // Don't redirect if:
+      // 1. Already on login/signup page (let the form handle the error)
+      // 2. The request was to /auth/login or /auth/signup (let useAuthMutation handle it)
+      const isAuthEndpoint = error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/auth/signup');
+      const isAuthPage = window.location.pathname === "/login" || window.location.pathname === "/signup";
+      
+      if (!isAuthEndpoint && !isAuthPage && window.location.pathname !== "/login") {
         window.location.href = "/login";
       }
     }

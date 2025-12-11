@@ -12,17 +12,22 @@ import type { LoginPayload } from "shared/src/types/auth";
  * Shows buttons for unauthenticated users, auto-redirects authenticated users
  */
 export default function Home() {
-  const { initialize, isAuthenticated } = useAuthStore((s) => ({
+  const { user, initialize, logout, isAuthenticated } = useAuthStore((s) => ({
+    user: s.user,
     initialize: s.initialize,
+    logout: s.logout,
     isAuthenticated: s.isAuthenticated,
   }));
 
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined") initialize();
-  }, [initialize]);
+    // Only initialize if user is not already loaded
+    // This prevents unnecessary re-initialization after login
+    if (typeof window !== "undefined" && !user) {
+      initialize();
+    }
+  }, [initialize, user]);
 
   // Mutation for quick login
   const loginMutation = useAuthMutation("login");
@@ -31,8 +36,8 @@ export default function Home() {
   const handleQuickLogin = (role: "teacher" | "student") => {
     const credentials: LoginPayload =
       role === "teacher"
-        ? { email: "teacher@example.com", password: "teacher123" }
-        : { email: "student@example.com", password: "student123" };
+        ? { email: "teacher1@example.com", password: "teacher123" }
+        : { email: "student1@example.com", password: "student123" };
 
     loginMutation.mutate(credentials);
   };
@@ -56,7 +61,7 @@ export default function Home() {
           {/* Desktop navigation - hidden on mobile (md:block) */}
           <div className="hidden md:block">
             {/* Show logout + user info ONLY when authenticated */}
-            {isAuthenticated ? (
+            {isAuthenticated && (
               <div className="text-right bg-gradient-to-br from-blue-400/10 to-cyan-400/10 p-4 rounded-lg border border-blue-300/30">
                 {/* Display user's first and last name in cyan */}
                 <p className="text-sm text-slate-200">
@@ -86,21 +91,6 @@ export default function Home() {
                 >
                   Logout
                 </button>
-              </div>
-            ) : (
-              <div className="flex gap-4">
-                <Link
-                  href="/login"
-                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow hover:from-blue-700 hover:to-blue-800 transition"
-                >
-                  Log In
-                </Link>
-                <Link
-                  href="/signup"
-                  className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-cyan-700 text-white rounded-lg shadow hover:from-cyan-700 hover:to-cyan-800 transition"
-                >
-                  Sign Up
-                </Link>
               </div>
             )}
           </div>
@@ -149,18 +139,7 @@ export default function Home() {
               </div>
             )}
           </div>
-          
-          <h1 className="text-6xl md:text-7xl font-black mb-6 bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-400 bg-clip-text text-transparent leading-tight">
-            Quiz Platform
-          </h1>
-          
-          <p className="text-xl md:text-2xl text-slate-300 mb-4 font-light">
-            Real-time interactive quizzes for teachers and students
-          </p>
-          
-          <p className="text-slate-400 max-w-2xl mx-auto mb-12">
-            Create engaging quiz sessions, participate in real-time, and track your progress instantly
-          </p>
+        )}
 
         {/* Quick Login Section - shown only for unauthenticated users */}
         {!isAuthenticated && (
@@ -240,56 +219,63 @@ export default function Home() {
               </Link>
             </div>
           </div>
+        )}
 
-          {/* Test Credentials Box */}
-          <div className="backdrop-blur-xl bg-white/5 border border-white/20 rounded-xl p-6 max-w-2xl mx-auto mb-12">
-            <p className="text-slate-300 font-semibold mb-4">🧪 Quick Test Credentials:</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
-              <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
-                <p className="text-sm text-blue-300 font-bold">👨‍🏫 Teacher</p>
-                <p className="text-xs text-slate-400 font-mono mt-2">teacher1@example.com</p>
-                <p className="text-xs text-slate-400 font-mono">teacher123</p>
+        {/* Features Grid - shown only for unauthenticated users */}
+        {!isAuthenticated && (
+          <>
+            <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Feature 1 */}
+              <div className="backdrop-blur-lg bg-white/5 border border-white/20 rounded-xl p-8 hover:border-blue-400/50 transition-all duration-300 group">
+                <div className="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">
+                  🎯
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">
+                  Create Quizzes
+                </h3>
+                <p className="text-slate-400 text-sm">
+                  Design engaging quizzes with multiple question types and
+                  real-time session management
+                </p>
               </div>
-              <div className="bg-cyan-500/20 border border-cyan-500/30 rounded-lg p-4">
-                <p className="text-sm text-cyan-300 font-bold">👨‍🎓 Student</p>
-                <p className="text-xs text-slate-400 font-mono mt-2">student1@example.com</p>
-                <p className="text-xs text-slate-400 font-mono">student123</p>
+
+              {/* Feature 2 */}
+              <div className="backdrop-blur-lg bg-white/5 border border-white/20 rounded-xl p-8 hover:border-cyan-400/50 transition-all duration-300 group">
+                <div className="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">
+                  ⚡
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">
+                  Live Sessions
+                </h3>
+                <p className="text-slate-400 text-sm">
+                  Host real-time quiz sessions with instant feedback and live
+                  participant tracking
+                </p>
+              </div>
+
+              {/* Feature 3 */}
+              <div className="backdrop-blur-lg bg-white/5 border border-white/20 rounded-xl p-8 hover:border-purple-400/50 transition-all duration-300 group">
+                <div className="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">
+                  📊
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Analytics</h3>
+                <p className="text-slate-400 text-sm">
+                  Track performance with detailed statistics and comprehensive
+                  dashboards
+                </p>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
-          {/* Feature 1 */}
-          <div className="backdrop-blur-lg bg-white/5 border border-white/20 rounded-xl p-8 hover:border-blue-400/50 transition-all duration-300 group">
-            <div className="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">🎯</div>
-            <h3 className="text-xl font-bold text-white mb-3">Create Quizzes</h3>
-            <p className="text-slate-400 text-sm">Design engaging quizzes with multiple question types and real-time session management</p>
-          </div>
-
-          {/* Feature 2 */}
-          <div className="backdrop-blur-lg bg-white/5 border border-white/20 rounded-xl p-8 hover:border-cyan-400/50 transition-all duration-300 group">
-            <div className="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">⚡</div>
-            <h3 className="text-xl font-bold text-white mb-3">Live Sessions</h3>
-            <p className="text-slate-400 text-sm">Host real-time quiz sessions with instant feedback and live participant tracking</p>
-          </div>
-
-          {/* Feature 3 */}
-          <div className="backdrop-blur-lg bg-white/5 border border-white/20 rounded-xl p-8 hover:border-purple-400/50 transition-all duration-300 group">
-            <div className="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">📊</div>
-            <h3 className="text-xl font-bold text-white mb-3">Analytics</h3>
-            <p className="text-slate-400 text-sm">Track performance with detailed statistics and comprehensive dashboards</p>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center mt-16 pt-12 border-t border-white/10">
-          <p className="text-slate-500 text-sm">
-            🚀 Ready to get started? Sign in with your account or create a new one
-          </p>
-        </div>
+            {/* Footer */}
+            <div className="text-center mt-16 pt-12 border-t border-white/10">
+              <p className="text-slate-500 text-sm">
+                🚀 Ready to get started? Sign in with your account or create a
+                new one
+              </p>
+            </div>
+          </>
+        )}
       </div>
-    </div>
+    </main>
   );
 }
