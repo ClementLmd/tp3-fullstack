@@ -8,6 +8,8 @@ import { pool } from "./db/connection";
 import dashboardRoutes from "./routes/dashboard";
 import authRoutes from "./routes/auth";
 import quizRoutes from "./routes/quiz";
+import sessionRoutes from "./routes/session";
+import { setupSocketHandlers } from "./socket/handlers";
 
 dotenv.config();
 
@@ -43,6 +45,10 @@ app.use("/auth", authRoutes);
 // Requires authentication and teacher role
 app.use("/api/quizzes", quizRoutes);
 
+// Session management routes mounted at /api/sessions
+// Requires authentication (teacher for most, students for joining)
+app.use("/api/sessions", sessionRoutes);
+
 // Dashboard routes mounted at /dashboard with authentication
 // All endpoints require valid JWT token
 app.use('/dashboard', dashboardRoutes);
@@ -53,13 +59,7 @@ app.get("/health", (req, res) => {
 });
 
 // Socket.io connection
-io.on("connection", (socket) => {
-  console.log("Client connected:", socket.id);
-
-  socket.on("disconnect", () => {
-    console.log("Client disconnected:", socket.id);
-  });
-});
+setupSocketHandlers(io);
 
 // Test database connection
 pool.query("SELECT NOW()", (err) => {

@@ -113,20 +113,29 @@ export interface JoinSessionRequest {
 
 // Socket.io event types
 export interface ServerToClientEvents {
-  question: (question: Question) => void;
+  question: (question: Partial<Question>) => void;
   results: (results: {
     questionId: string;
-    leaderboard: Array<{ userId: string; score: number; name: string }>;
+    leaderboard: Array<{ rank: number; userId: string; score: number; name: string }>;
   }) => void;
   sessionStarted: (session: Session) => void;
   sessionEnded: () => void;
-  timerUpdate: (timeLeft: number) => void;
-  error: (message: string) => void;
+  timerUpdate: (data: { timeLeft: number }) => void;
+  timeUp: (data: { questionId: string }) => void;
+  error: (error: { message: string }) => void;
+  joinedSession: (data: { sessionId: string; quizId: string; currentQuestionIndex: number }) => void;
+  sessionUpdate: (data: { connectedStudents: number; students: Array<{ userId: string; userName: string }> }) => void;
+  answerSubmitted: (data: { questionId: string; isCorrect: boolean; pointsEarned: number }) => void;
+  leaderboard: (data: { leaderboard: Array<{ rank: number; userId: string; name: string; score: number }> }) => void;
 }
 
 export interface ClientToServerEvents {
-  joinSession: (data: { accessCode: string; userId: string }) => void;
+  joinSession: (data: { accessCode: string; userId: string; userName: string }) => void;
+  joinTeacherRoom: (data: { sessionId: string }) => void;
   answer: (data: { questionId: string; answer: string }) => void;
   leaveSession: () => void;
+  broadcastQuestion: (data: { sessionId: string; question: Question }) => void;
+  broadcastResults: (data: { sessionId: string; questionId: string }) => void;
+  getLeaderboard: (data: { sessionId: string }) => void;
 }
 
