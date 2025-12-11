@@ -44,17 +44,19 @@ export default function AppHeader() {
 
           {/* Center: Navigation buttons */}
           <div className="hidden md:flex items-center gap-2">
-            {/* Quizzes button */}
-            <Link
-              href={user.role === "TEACHER" ? "/teacher/quizzes" : "/dashboard"}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                isActive("/teacher/quizzes") || (user.role === "STUDENT" && isActive("/dashboard"))
-                  ? "bg-blue-500/20 text-blue-300 border border-blue-500/50"
-                  : "bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-slate-700/50 hover:text-white"
-              }`}
-            >
-              📚 Quizzes
-            </Link>
+            {/* Quizzes button (Teachers only) */}
+            {user.role === "TEACHER" && (
+              <Link
+                href="/teacher/quizzes"
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  isActive("/teacher/quizzes")
+                    ? "bg-blue-500/20 text-blue-300 border border-blue-500/50"
+                    : "bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-slate-700/50 hover:text-white"
+                }`}
+              >
+                📚 Quizzes
+              </Link>
+            )}
 
             {/* Dashboard button */}
             <Link
