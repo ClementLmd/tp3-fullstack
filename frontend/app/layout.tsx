@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import ReactQueryProvider from '../lib/providers/ReactQueryProvider'
+import AppHeader from '../components/layout/AppHeader'
 
 export const metadata: Metadata = {
   title: "Quiz Platform - Real-time Interactive Quiz",
@@ -15,7 +16,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans">
-        <ReactQueryProvider>{children}</ReactQueryProvider>
+        <ReactQueryProvider>
+          <AppHeader />
+          {children}
+        </ReactQueryProvider>
       </body>
     </html>
   );
