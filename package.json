@@ -11,7 +11,12 @@
     "build:frontend": "pnpm --filter frontend build",
     "build:backend": "pnpm --filter backend build",
     "build:shared": "pnpm --filter shared build",
-    "lint": "pnpm --filter frontend lint && pnpm --filter backend lint"
+    "lint": "pnpm --filter frontend lint && pnpm --filter backend lint",
+    "test": "pnpm --filter backend test && pnpm --filter frontend test",
+    "test:backend": "pnpm --filter backend test",
+    "test:frontend": "pnpm --filter frontend test",
+    "test:watch": "concurrently \"pnpm --filter backend test:watch\" \"pnpm --filter frontend test:watch\"",
+    "test:coverage": "pnpm --filter backend test:coverage && pnpm --filter frontend test:coverage"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
