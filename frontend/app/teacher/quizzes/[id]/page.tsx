@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import AuthGuard from '../../../../components/AuthGuard';
-import { useQuiz, useUpdateQuiz } from '../../../../lib/hooks/useQuizzes';
+import { useQuiz, useUpdateQuizSocket, useQuizzesRealtime } from '../../../../lib/hooks/useQuizzes';
 import { UserRole, QuestionType } from 'shared/src/types';
 import type { UpdateQuizPayload } from '../../../../lib/hooks/useQuizzes';
 
@@ -26,7 +26,8 @@ export default function EditQuizPage() {
   const quizId = params?.id as string;
 
   const { data: quiz, isLoading, error: fetchError } = useQuiz(quizId);
-  const updateQuiz = useUpdateQuiz();
+  const updateQuizSocket = useUpdateQuizSocket();
+  const { isConnected } = useQuizzesRealtime();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -171,10 +172,10 @@ export default function EditQuizPage() {
     };
 
     try {
-      await updateQuiz.mutateAsync(payload);
+      await updateQuizSocket.mutateAsync(payload);
       router.push('/teacher/quizzes');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to update quiz');
+      setError(err.message || 'Failed to update quiz');
     }
   };
 
@@ -222,10 +223,21 @@ export default function EditQuizPage() {
             >
               ← Back to Quizzes
             </button>
-            <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
-              Edit Quiz
-            </h1>
-            <p className="text-slate-300 mt-2">Modify quiz details and questions</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
+                  Edit Quiz
+                </h1>
+                <p className="text-slate-300 mt-2">Modify quiz details and questions</p>
+              </div>
+              {/* Real-time connection indicator */}
+              <div className="flex items-center gap-2 bg-slate-800/50 px-4 py-2 rounded-lg border border-slate-700">
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
+                <span className="text-xs text-slate-400">
+                  {isConnected ? 'Real-time enabled' : 'Offline mode'}
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Form */}
@@ -503,10 +515,10 @@ export default function EditQuizPage() {
               </button>
               <button
                 type="submit"
-                disabled={updateQuiz.isPending}
+                disabled={updateQuizSocket.isPending}
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-cyan-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {updateQuiz.isPending ? 'Saving...' : 'Save Changes'}
+                {updateQuizSocket.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </form>

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
 import type { Quiz, Question, QuestionType } from 'shared/src/types';
+import { useSocketQuiz } from './useSocketQuiz';
 
 // Types for creating/updating quizzes
 export interface CreateQuizPayload {
@@ -11,6 +12,42 @@ export interface CreateQuizPayload {
 
 export interface UpdateQuizPayload extends CreateQuizPayload {
   id: string;
+}
+
+// Hook to use socket.io for real-time updates
+export function useQuizzesRealtime() {
+  const queryClient = useQueryClient();
+
+  return useSocketQuiz({
+    enabled: true,
+    onQuizCreated: (quiz) => {
+      // Add new quiz to the cache
+      queryClient.setQueryData<Quiz[]>(['quizzes'], (old) => {
+        if (!old) return [quiz];
+        // Check if quiz already exists (avoid duplicates)
+        if (old.some(q => q.id === quiz.id)) return old;
+        return [quiz, ...old];
+      });
+    },
+    onQuizUpdated: (quiz) => {
+      // Update quiz in the cache
+      queryClient.setQueryData<Quiz[]>(['quizzes'], (old) => {
+        if (!old) return [quiz];
+        return old.map(q => q.id === quiz.id ? quiz : q);
+      });
+      // Also update the individual quiz cache
+      queryClient.setQueryData(['quiz', quiz.id], quiz);
+    },
+    onQuizDeleted: (quizId) => {
+      // Remove quiz from the cache
+      queryClient.setQueryData<Quiz[]>(['quizzes'], (old) => {
+        if (!old) return [];
+        return old.filter(q => q.id !== quizId);
+      });
+      // Remove from individual quiz cache
+      queryClient.removeQueries({ queryKey: ['quiz', quizId] });
+    },
+  });
 }
 
 // Hook to fetch all quizzes for the teacher
@@ -37,7 +74,87 @@ export function useQuiz(id: string | null) {
   });
 }
 
-// Hook to create a new quiz
+// Hook to create a new quiz (using socket.io)
+export function useCreateQuizSocket() {
+  const queryClient = useQueryClient();
+  const { createQuiz, isConnected } = useSocketQuiz({ enabled: false });
+
+  return useMutation<Quiz, Error, CreateQuizPayload>({
+    mutationFn: async (payload: CreateQuizPayload) => {
+      const response = await createQuiz(payload);
+      if (!response.success || !response.quiz) {
+        throw new Error(response.error || 'Failed to create quiz');
+      }
+      return response.quiz;
+    },
+    onSuccess: (quiz) => {
+      // Update cache optimistically
+      queryClient.setQueryData<Quiz[]>(['quizzes'], (old) => {
+        if (!old) return [quiz];
+        return [quiz, ...old];
+      });
+    },
+    meta: {
+      isConnected,
+    },
+  });
+}
+
+// Hook to update an existing quiz (using socket.io)
+export function useUpdateQuizSocket() {
+  const queryClient = useQueryClient();
+  const { updateQuiz, isConnected } = useSocketQuiz({ enabled: false });
+
+  return useMutation<Quiz, Error, UpdateQuizPayload>({
+    mutationFn: async ({ id, ...payload }: UpdateQuizPayload) => {
+      const response = await updateQuiz(id, payload);
+      if (!response.success || !response.quiz) {
+        throw new Error(response.error || 'Failed to update quiz');
+      }
+      return response.quiz;
+    },
+    onSuccess: (quiz) => {
+      // Update cache optimistically
+      queryClient.setQueryData<Quiz[]>(['quizzes'], (old) => {
+        if (!old) return [quiz];
+        return old.map(q => q.id === quiz.id ? quiz : q);
+      });
+      queryClient.setQueryData(['quiz', quiz.id], quiz);
+    },
+    meta: {
+      isConnected,
+    },
+  });
+}
+
+// Hook to delete a quiz (using socket.io)
+export function useDeleteQuizSocket() {
+  const queryClient = useQueryClient();
+  const { deleteQuiz, isConnected } = useSocketQuiz({ enabled: false });
+
+  return useMutation<void, Error, string>({
+    mutationFn: async (id: string) => {
+      const response = await deleteQuiz(id);
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to delete quiz');
+      }
+    },
+    onSuccess: (_, quizId) => {
+      // Remove from cache optimistically
+      queryClient.setQueryData<Quiz[]>(['quizzes'], (old) => {
+        if (!old) return [];
+        return old.filter(q => q.id !== quizId);
+      });
+      queryClient.removeQueries({ queryKey: ['quiz', quizId] });
+    },
+    meta: {
+      isConnected,
+    },
+  });
+}
+
+
+// Keep REST API hooks as fallbacks
 export function useCreateQuiz() {
   const queryClient = useQueryClient();
 
@@ -47,13 +164,11 @@ export function useCreateQuiz() {
       return response.data;
     },
     onSuccess: () => {
-      // Invalidate quizzes list to refetch
       queryClient.invalidateQueries({ queryKey: ['quizzes'] });
     },
   });
 }
 
-// Hook to update an existing quiz
 export function useUpdateQuiz() {
   const queryClient = useQueryClient();
 
@@ -63,14 +178,12 @@ export function useUpdateQuiz() {
       return response.data;
     },
     onSuccess: (data) => {
-      // Invalidate both the list and the specific quiz
       queryClient.invalidateQueries({ queryKey: ['quizzes'] });
       queryClient.invalidateQueries({ queryKey: ['quiz', data.id] });
     },
   });
 }
 
-// Hook to delete a quiz
 export function useDeleteQuiz() {
   const queryClient = useQueryClient();
 
@@ -79,7 +192,6 @@ export function useDeleteQuiz() {
       await apiClient.delete(`/api/quizzes/${id}`);
     },
     onSuccess: () => {
-      // Invalidate quizzes list to refetch
       queryClient.invalidateQueries({ queryKey: ['quizzes'] });
     },
   });

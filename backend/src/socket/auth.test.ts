@@ -130,4 +130,19 @@ describe('Socket Authentication Middleware', () => {
     );
     expect((mockSocket as any).userId).toBeUndefined();
   });
+
+  it('should authenticate with valid token from cookie', () => {
+    const token = jwt.sign(
+      { userId: 'user-999', role: UserRole.TEACHER },
+      'test-secret-key'
+    );
+
+    mockSocket.handshake!.headers = { cookie: `auth_token=${token}; other=value` };
+
+    authenticateSocket(mockSocket as Socket, mockNext);
+
+    expect(mockNext).toHaveBeenCalledWith();
+    expect((mockSocket as any).userId).toBe('user-999');
+    expect((mockSocket as any).userRole).toBe(UserRole.TEACHER);
+  });
 });

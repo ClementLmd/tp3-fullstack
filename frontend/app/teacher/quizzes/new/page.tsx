@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthGuard from '../../../../components/AuthGuard';
-import { useCreateQuiz } from '../../../../lib/hooks/useQuizzes';
+import { useCreateQuizSocket, useQuizzesRealtime } from '../../../../lib/hooks/useQuizzes';
 import { UserRole, QuestionType } from 'shared/src/types';
 import type { CreateQuizPayload } from '../../../../lib/hooks/useQuizzes';
 
@@ -22,7 +22,8 @@ interface QuestionForm {
 
 export default function NewQuizPage() {
   const router = useRouter();
-  const createQuiz = useCreateQuiz();
+  const createQuizSocket = useCreateQuizSocket();
+  const { isConnected } = useQuizzesRealtime();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -155,10 +156,10 @@ export default function NewQuizPage() {
     };
 
     try {
-      await createQuiz.mutateAsync(payload);
+      await createQuizSocket.mutateAsync(payload);
       router.push('/teacher/quizzes');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to create quiz');
+      setError(err.message || 'Failed to create quiz');
     }
   };
 
@@ -174,10 +175,21 @@ export default function NewQuizPage() {
             >
               ← Back to Quizzes
             </button>
-            <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
-              Create New Quiz
-            </h1>
-            <p className="text-slate-300 mt-2">Add questions with different types</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
+                  Create New Quiz
+                </h1>
+                <p className="text-slate-300 mt-2">Add questions with different types</p>
+              </div>
+              {/* Real-time connection indicator */}
+              <div className="flex items-center gap-2 bg-slate-800/50 px-4 py-2 rounded-lg border border-slate-700">
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
+                <span className="text-xs text-slate-400">
+                  {isConnected ? 'Real-time enabled' : 'Offline mode'}
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Form */}
@@ -458,10 +470,10 @@ export default function NewQuizPage() {
               </button>
               <button
                 type="submit"
-                disabled={createQuiz.isPending}
+                disabled={createQuizSocket.isPending}
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-cyan-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {createQuiz.isPending ? 'Creating...' : 'Create Quiz'}
+                {createQuizSocket.isPending ? 'Creating...' : 'Create Quiz'}
               </button>
             </div>
           </form>

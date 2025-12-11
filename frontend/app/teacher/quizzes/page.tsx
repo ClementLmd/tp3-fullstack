@@ -3,14 +3,17 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthGuard from '../../../components/AuthGuard';
-import { useQuizzes, useDeleteQuiz } from '../../../lib/hooks/useQuizzes';
+import { useQuizzes, useDeleteQuizSocket, useQuizzesRealtime } from '../../../lib/hooks/useQuizzes';
 import { UserRole } from 'shared/src/types';
 
 export default function QuizzesPage() {
   const router = useRouter();
   const { data: quizzes, isLoading, error } = useQuizzes();
-  const deleteQuiz = useDeleteQuiz();
+  const deleteQuizSocket = useDeleteQuizSocket();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  
+  // Enable real-time updates via socket.io
+  const { isConnected } = useQuizzesRealtime();
 
   const handleDelete = async (id: string, title: string) => {
     if (!confirm(`Are you sure you want to delete the quiz "${title}"? This action cannot be undone.`)) {
@@ -19,7 +22,7 @@ export default function QuizzesPage() {
 
     setDeletingId(id);
     try {
-      await deleteQuiz.mutateAsync(id);
+      await deleteQuizSocket.mutateAsync(id);
     } catch (err) {
       console.error('Failed to delete quiz:', err);
       alert('Failed to delete quiz. Please try again.');
@@ -38,7 +41,16 @@ export default function QuizzesPage() {
               <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
                 My Quizzes
               </h1>
-              <p className="text-slate-300 mt-2">Create and manage your quiz collection</p>
+              <div className="flex items-center gap-3 mt-2">
+                <p className="text-slate-300">Create and manage your quiz collection</p>
+                {/* Real-time connection indicator */}
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
+                  <span className="text-xs text-slate-400">
+                    {isConnected ? 'Live' : 'Offline'}
+                  </span>
+                </div>
+              </div>
             </div>
             <div className="flex gap-4">
               <button
