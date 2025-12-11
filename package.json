@@ -12,11 +12,15 @@
     "build:backend": "pnpm --filter backend build",
     "build:shared": "pnpm --filter shared build",
     "lint": "pnpm --filter frontend lint && pnpm --filter backend lint",
+    "typecheck": "pnpm --filter shared build && pnpm --filter backend typecheck && pnpm --filter frontend typecheck",
+    "typecheck:backend": "pnpm --filter backend typecheck",
+    "typecheck:frontend": "pnpm --filter frontend typecheck",
     "test": "pnpm --filter backend test && pnpm --filter frontend test",
     "test:backend": "pnpm --filter backend test",
     "test:frontend": "pnpm --filter frontend test",
     "test:watch": "concurrently \"pnpm --filter backend test:watch\" \"pnpm --filter frontend test:watch\"",
-    "test:coverage": "pnpm --filter backend test:coverage && pnpm --filter frontend test:coverage"
+    "test:coverage": "pnpm --filter backend test:coverage && pnpm --filter frontend test:coverage",
+    "fullcheck": "pnpm typecheck && pnpm test"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
