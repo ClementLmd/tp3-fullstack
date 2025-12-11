@@ -10,7 +10,11 @@ async function seed() {
     const teacher1Result = await query(
       `INSERT INTO users (email, password, first_name, last_name, role)
        VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (email) DO NOTHING
+       ON CONFLICT (email) DO UPDATE SET
+         password = EXCLUDED.password,
+         first_name = EXCLUDED.first_name,
+         last_name = EXCLUDED.last_name,
+         role = EXCLUDED.role
        RETURNING id`,
       ['teacher1@example.com', teacher1Password, 'John', 'Smith', 'TEACHER']
     );
@@ -19,7 +23,11 @@ async function seed() {
     const teacher2Result = await query(
       `INSERT INTO users (email, password, first_name, last_name, role)
        VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (email) DO NOTHING
+       ON CONFLICT (email) DO UPDATE SET
+         password = EXCLUDED.password,
+         first_name = EXCLUDED.first_name,
+         last_name = EXCLUDED.last_name,
+         role = EXCLUDED.role
        RETURNING id`,
       ['teacher2@example.com', teacher2Password, 'Sarah', 'Johnson', 'TEACHER']
     );
@@ -29,7 +37,11 @@ async function seed() {
     const student1Result = await query(
       `INSERT INTO users (email, password, first_name, last_name, role)
        VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (email) DO NOTHING
+       ON CONFLICT (email) DO UPDATE SET
+         password = EXCLUDED.password,
+         first_name = EXCLUDED.first_name,
+         last_name = EXCLUDED.last_name,
+         role = EXCLUDED.role
        RETURNING id`,
       ['student1@example.com', student1Password, 'Alice', 'Brown', 'STUDENT']
     );
@@ -38,7 +50,11 @@ async function seed() {
     const student2Result = await query(
       `INSERT INTO users (email, password, first_name, last_name, role)
        VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (email) DO NOTHING
+       ON CONFLICT (email) DO UPDATE SET
+         password = EXCLUDED.password,
+         first_name = EXCLUDED.first_name,
+         last_name = EXCLUDED.last_name,
+         role = EXCLUDED.role
        RETURNING id`,
       ['student2@example.com', student2Password, 'Bob', 'Wilson', 'STUDENT']
     );
@@ -47,7 +63,11 @@ async function seed() {
     const student3Result = await query(
       `INSERT INTO users (email, password, first_name, last_name, role)
        VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (email) DO NOTHING
+       ON CONFLICT (email) DO UPDATE SET
+         password = EXCLUDED.password,
+         first_name = EXCLUDED.first_name,
+         last_name = EXCLUDED.last_name,
+         role = EXCLUDED.role
        RETURNING id`,
       ['student3@example.com', student3Password, 'Carol', 'Davis', 'STUDENT']
     );
@@ -62,7 +82,8 @@ async function seed() {
     const quiz1Result = await query(
       `INSERT INTO quizzes (title, description, creator_id)
        VALUES ($1, $2, $3)
-       ON CONFLICT DO NOTHING
+       ON CONFLICT (title, creator_id) DO UPDATE SET
+         description = EXCLUDED.description
        RETURNING id`,
       ['Mathematics Basics', 'A quiz covering basic mathematical concepts', teacher1Id]
     );
@@ -70,7 +91,8 @@ async function seed() {
     const quiz2Result = await query(
       `INSERT INTO quizzes (title, description, creator_id)
        VALUES ($1, $2, $3)
-       ON CONFLICT DO NOTHING
+       ON CONFLICT (title, creator_id) DO UPDATE SET
+         description = EXCLUDED.description
        RETURNING id`,
       ['Science Fundamentals', 'An introduction to basic science principles', teacher1Id]
     );
@@ -79,7 +101,8 @@ async function seed() {
     const quiz3Result = await query(
       `INSERT INTO quizzes (title, description, creator_id)
        VALUES ($1, $2, $3)
-       ON CONFLICT DO NOTHING
+       ON CONFLICT (title, creator_id) DO UPDATE SET
+         description = EXCLUDED.description
        RETURNING id`,
       ['History 101', 'Key historical events and dates', teacher2Id]
     );
@@ -92,7 +115,13 @@ async function seed() {
     await query(
       `INSERT INTO questions (quiz_id, text, type, options, correct_answer, "order", points, time_limit)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       ON CONFLICT DO NOTHING`,
+       ON CONFLICT (quiz_id, "order") DO UPDATE SET
+         text = EXCLUDED.text,
+         type = EXCLUDED.type,
+         options = EXCLUDED.options,
+         correct_answer = EXCLUDED.correct_answer,
+         points = EXCLUDED.points,
+         time_limit = EXCLUDED.time_limit`,
       [
         quiz1Id,
         'What is 2 + 2?',
@@ -108,7 +137,13 @@ async function seed() {
     await query(
       `INSERT INTO questions (quiz_id, text, type, options, correct_answer, "order", points, time_limit)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       ON CONFLICT DO NOTHING`,
+       ON CONFLICT (quiz_id, "order") DO UPDATE SET
+         text = EXCLUDED.text,
+         type = EXCLUDED.type,
+         options = EXCLUDED.options,
+         correct_answer = EXCLUDED.correct_answer,
+         points = EXCLUDED.points,
+         time_limit = EXCLUDED.time_limit`,
       [
         quiz1Id,
         'Is 5 * 3 equal to 15?',
@@ -125,7 +160,13 @@ async function seed() {
     await query(
       `INSERT INTO questions (quiz_id, text, type, options, correct_answer, "order", points, time_limit)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       ON CONFLICT DO NOTHING`,
+       ON CONFLICT (quiz_id, "order") DO UPDATE SET
+         text = EXCLUDED.text,
+         type = EXCLUDED.type,
+         options = EXCLUDED.options,
+         correct_answer = EXCLUDED.correct_answer,
+         points = EXCLUDED.points,
+         time_limit = EXCLUDED.time_limit`,
       [
         quiz2Id,
         'What is the chemical symbol for gold?',
@@ -142,7 +183,13 @@ async function seed() {
     await query(
       `INSERT INTO questions (quiz_id, text, type, options, correct_answer, "order", points, time_limit)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       ON CONFLICT DO NOTHING`,
+       ON CONFLICT (quiz_id, "order") DO UPDATE SET
+         text = EXCLUDED.text,
+         type = EXCLUDED.type,
+         options = EXCLUDED.options,
+         correct_answer = EXCLUDED.correct_answer,
+         points = EXCLUDED.points,
+         time_limit = EXCLUDED.time_limit`,
       [
         quiz3Id,
         'Was the signing of the Declaration of Independence in 1776?',
@@ -159,7 +206,12 @@ async function seed() {
     const session1Result = await query(
       `INSERT INTO sessions (quiz_id, access_code, is_active, current_question_index, started_at)
        VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (access_code) DO NOTHING
+       ON CONFLICT (access_code) DO UPDATE SET
+         quiz_id = EXCLUDED.quiz_id,
+         is_active = EXCLUDED.is_active,
+         current_question_index = EXCLUDED.current_question_index,
+         started_at = EXCLUDED.started_at,
+         ended_at = EXCLUDED.ended_at
        RETURNING id`,
       [quiz1Id, 'ABC123', true, 0, new Date()]
     );
@@ -167,7 +219,12 @@ async function seed() {
     const session2Result = await query(
       `INSERT INTO sessions (quiz_id, access_code, is_active, current_question_index, started_at, ended_at)
        VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (access_code) DO NOTHING
+       ON CONFLICT (access_code) DO UPDATE SET
+         quiz_id = EXCLUDED.quiz_id,
+         is_active = EXCLUDED.is_active,
+         current_question_index = EXCLUDED.current_question_index,
+         started_at = EXCLUDED.started_at,
+         ended_at = EXCLUDED.ended_at
        RETURNING id`,
       [quiz2Id, 'DEF456', false, 1, new Date(Date.now() - 3600000), new Date(Date.now() - 1800000)]
     );
@@ -175,7 +232,12 @@ async function seed() {
     const session3Result = await query(
       `INSERT INTO sessions (quiz_id, access_code, is_active, current_question_index, started_at)
        VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (access_code) DO NOTHING
+       ON CONFLICT (access_code) DO UPDATE SET
+         quiz_id = EXCLUDED.quiz_id,
+         is_active = EXCLUDED.is_active,
+         current_question_index = EXCLUDED.current_question_index,
+         started_at = EXCLUDED.started_at,
+         ended_at = EXCLUDED.ended_at
        RETURNING id`,
       [quiz3Id, 'GHI789', true, 0, new Date()]
     );
@@ -188,7 +250,9 @@ async function seed() {
     const part1Result = await query(
       `INSERT INTO participations (session_id, user_id, score, completed_at)
        VALUES ($1, $2, $3, $4)
-       ON CONFLICT (session_id, user_id) DO NOTHING
+       ON CONFLICT (session_id, user_id) DO UPDATE SET
+         score = EXCLUDED.score,
+         completed_at = EXCLUDED.completed_at
        RETURNING id`,
       [session1Id, student1Id, 15, new Date()]
     );
@@ -196,7 +260,9 @@ async function seed() {
     const part2Result = await query(
       `INSERT INTO participations (session_id, user_id, score, completed_at)
        VALUES ($1, $2, $3, $4)
-       ON CONFLICT (session_id, user_id) DO NOTHING
+       ON CONFLICT (session_id, user_id) DO UPDATE SET
+         score = EXCLUDED.score,
+         completed_at = EXCLUDED.completed_at
        RETURNING id`,
       [session1Id, student2Id, 18, new Date()]
     );
@@ -204,7 +270,9 @@ async function seed() {
     const part3Result = await query(
       `INSERT INTO participations (session_id, user_id, score, completed_at)
        VALUES ($1, $2, $3, $4)
-       ON CONFLICT (session_id, user_id) DO NOTHING
+       ON CONFLICT (session_id, user_id) DO UPDATE SET
+         score = EXCLUDED.score,
+         completed_at = EXCLUDED.completed_at
        RETURNING id`,
       [session2Id, student1Id, 20, new Date()]
     );
@@ -212,7 +280,9 @@ async function seed() {
     const part4Result = await query(
       `INSERT INTO participations (session_id, user_id, score, completed_at)
        VALUES ($1, $2, $3, $4)
-       ON CONFLICT (session_id, user_id) DO NOTHING
+       ON CONFLICT (session_id, user_id) DO UPDATE SET
+         score = EXCLUDED.score,
+         completed_at = EXCLUDED.completed_at
        RETURNING id`,
       [session2Id, student2Id, 17, new Date()]
     );
@@ -220,7 +290,9 @@ async function seed() {
     const part5Result = await query(
       `INSERT INTO participations (session_id, user_id, score, completed_at)
        VALUES ($1, $2, $3, $4)
-       ON CONFLICT (session_id, user_id) DO NOTHING
+       ON CONFLICT (session_id, user_id) DO UPDATE SET
+         score = EXCLUDED.score,
+         completed_at = EXCLUDED.completed_at
        RETURNING id`,
       [session3Id, student3Id, 10, new Date()]
     );
@@ -243,35 +315,50 @@ async function seed() {
       await query(
         `INSERT INTO answers (question_id, participation_id, answer, is_correct, points)
          VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT DO NOTHING`,
+         ON CONFLICT (question_id, participation_id) DO UPDATE SET
+           answer = EXCLUDED.answer,
+           is_correct = EXCLUDED.is_correct,
+           points = EXCLUDED.points`,
         [q1.id, part1Id, '4', true, 10]
       );
 
       await query(
         `INSERT INTO answers (question_id, participation_id, answer, is_correct, points)
          VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT DO NOTHING`,
+         ON CONFLICT (question_id, participation_id) DO UPDATE SET
+           answer = EXCLUDED.answer,
+           is_correct = EXCLUDED.is_correct,
+           points = EXCLUDED.points`,
         [q2.id, part1Id, 'true', true, 5]
       );
 
       await query(
         `INSERT INTO answers (question_id, participation_id, answer, is_correct, points)
          VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT DO NOTHING`,
+         ON CONFLICT (question_id, participation_id) DO UPDATE SET
+           answer = EXCLUDED.answer,
+           is_correct = EXCLUDED.is_correct,
+           points = EXCLUDED.points`,
         [q1.id, part2Id, '4', true, 10]
       );
 
       await query(
         `INSERT INTO answers (question_id, participation_id, answer, is_correct, points)
          VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT DO NOTHING`,
+         ON CONFLICT (question_id, participation_id) DO UPDATE SET
+           answer = EXCLUDED.answer,
+           is_correct = EXCLUDED.is_correct,
+           points = EXCLUDED.points`,
         [q2.id, part2Id, 'true', true, 8]
       );
 
       await query(
         `INSERT INTO answers (question_id, participation_id, answer, is_correct, points)
          VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT DO NOTHING`,
+         ON CONFLICT (question_id, participation_id) DO UPDATE SET
+           answer = EXCLUDED.answer,
+           is_correct = EXCLUDED.is_correct,
+           points = EXCLUDED.points`,
         [q3.id, part3Id, 'Au', true, 10]
       );
     }
