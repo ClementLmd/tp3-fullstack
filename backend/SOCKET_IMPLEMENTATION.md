@@ -337,9 +337,10 @@ tsx src/test-manual/test-session-api.ts
 1. **Redis Integration:** Move in-memory state to Redis for scalability
 2. **Session Persistence:** Reconnection support after disconnects
 3. **Room Cleanup:** Automatic cleanup of inactive sessions
-4. **Rate Limiting:** Prevent spam on answer submissions
+4. **Rate Limiting:** Add rate limiting middleware to prevent abuse (e.g., using express-rate-limit)
 5. **Analytics:** Track session metrics and student performance
 6. **Private Rooms:** Option for private vs public sessions
+7. **Session Expiry:** Automatic expiration of old sessions
 
 ## Dependencies
 
