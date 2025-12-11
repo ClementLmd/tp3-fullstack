@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useAuthStore } from "../lib/store/authStore";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import useAuthMutation from "../lib/hooks/useAuthMutation";
+import type { LoginPayload } from "shared/src/types/auth";
 
 /**
  * Home component - Main landing page for Quiz Platform
@@ -25,6 +27,19 @@ export default function Home() {
   useEffect(() => {
     if (typeof window !== "undefined") initialize();
   }, [initialize]);
+
+  // Mutation for quick login
+  const loginMutation = useAuthMutation("login");
+
+  // Quick login handlers for mock accounts
+  const handleQuickLogin = (role: "teacher" | "student") => {
+    const credentials: LoginPayload =
+      role === "teacher"
+        ? { email: "teacher@example.com", password: "teacher123" }
+        : { email: "student@example.com", password: "student123" };
+
+    loginMutation.mutate(credentials);
+  };
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-8">
@@ -125,21 +140,83 @@ export default function Home() {
           </div>
         )}
 
-        {/* Mobile navigation - shown only for unauthenticated users */}
+        {/* Quick Login Section - shown only for unauthenticated users */}
         {!isAuthenticated && (
-          <div className="mt-8 flex gap-4 justify-center md:hidden">
-            <Link
-              href="/login"
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-800 transition transform hover:scale-105"
-            >
-              Log In
-            </Link>
-            <Link
-              href="/signup"
-              className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-700 text-white font-semibold rounded-lg shadow-lg hover:from-cyan-700 hover:to-cyan-800 transition transform hover:scale-105"
-            >
-              Sign Up
-            </Link>
+          <div className="mt-8 space-y-6">
+            {/* Quick Login Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Teacher Quick Login */}
+              <div className="p-6 bg-gradient-to-br from-blue-500/20 to-blue-600/10 rounded-lg border border-blue-400/50 hover:border-blue-300 transition hover:shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-blue-300 mb-1">
+                      👨‍🏫 Teacher Account
+                    </h3>
+                    <p className="text-sm text-slate-400">
+                      teacher@example.com
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleQuickLogin("teacher")}
+                  disabled={loginMutation.isPending}
+                  className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold shadow-lg hover:from-blue-700 hover:to-blue-800 transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loginMutation.isPending
+                    ? "Connecting..."
+                    : "Quick Login as Teacher"}
+                </button>
+              </div>
+
+              {/* Student Quick Login */}
+              <div className="p-6 bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 rounded-lg border border-cyan-400/50 hover:border-cyan-300 transition hover:shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-cyan-300 mb-1">
+                      👨‍🎓 Student Account
+                    </h3>
+                    <p className="text-sm text-slate-400">
+                      student@example.com
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleQuickLogin("student")}
+                  disabled={loginMutation.isPending}
+                  className="w-full px-4 py-2 bg-gradient-to-r from-cyan-600 to-cyan-700 text-white rounded-lg font-semibold shadow-lg hover:from-cyan-700 hover:to-cyan-800 transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loginMutation.isPending
+                    ? "Connecting..."
+                    : "Quick Login as Student"}
+                </button>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-600"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-slate-800 text-slate-400">Or</span>
+              </div>
+            </div>
+
+            {/* Regular Login/Signup Links */}
+            <div className="flex gap-4 justify-center">
+              <Link
+                href="/login"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-800 transition transform hover:scale-105"
+              >
+                Log In
+              </Link>
+              <Link
+                href="/signup"
+                className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-700 text-white font-semibold rounded-lg shadow-lg hover:from-cyan-700 hover:to-cyan-800 transition transform hover:scale-105"
+              >
+                Sign Up
+              </Link>
+            </div>
           </div>
         )}
       </div>

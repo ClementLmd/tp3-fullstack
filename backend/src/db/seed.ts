@@ -25,9 +25,10 @@ async function seed() {
     );
 
     console.log('✅ Seed data created successfully');
-    console.log('📝 Test accounts:');
-    console.log('   Teacher: teacher@example.com / teacher123');
-    console.log('   Student: student@example.com / student123');
+    console.log('\n📝 Mock accounts for quick login:');
+    console.log('   👨‍🏫 Teacher: teacher@example.com / teacher123');
+    console.log('   👨‍🎓 Student: student@example.com / student123');
+    console.log('\n💡 Tip: Use the "Quick Login" buttons on the homepage to connect instantly!\n');
     
     process.exit(0);
   } catch (error) {
