@@ -31,7 +31,11 @@ export function authenticateSocket(socket: Socket, next: (err?: Error) => void) 
       return next(new Error('Authentication error: No token provided'));
     }
 
-    const secret = process.env.JWT_SECRET || 'default-secret';
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      console.error('JWT_SECRET is not configured');
+      return next(new Error('Authentication error: Server configuration error'));
+    }
     
     // Verify token
     const decoded = jwt.verify(token, secret) as JwtPayload;

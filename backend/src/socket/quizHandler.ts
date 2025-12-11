@@ -58,12 +58,12 @@ function validateQuestions(questions: unknown[]): string | null {
 
     // Validate points
     if (q.points !== undefined && (typeof q.points !== 'number' || q.points < 0)) {
-      return `Question ${i + 1}: Points must be a positive number.`;
+      return `Question ${i + 1}: Points must be a non-negative number.`;
     }
 
     // Validate time limit
-    if (q.timeLimit !== undefined && (typeof q.timeLimit !== 'number' || q.timeLimit < 0)) {
-      return `Question ${i + 1}: Time limit must be a positive number.`;
+    if (q.timeLimit !== undefined && (typeof q.timeLimit !== 'number' || q.timeLimit <= 0)) {
+      return `Question ${i + 1}: Time limit must be a positive number (greater than 0).`;
     }
   }
   
