@@ -98,6 +98,14 @@ export interface ServerToClientEvents {
     questionId: string;
     correctAnswer: string;
     leaderboard: Array<{ userId: string; score: number; name: string }>;
+    participantAnswers?: Array<{
+      userId: string;
+      name: string;
+      answer?: string;
+      isCorrect?: boolean;
+      points: number;
+      answered: boolean;
+    }>;
   }) => void;
   sessionStarted: (session: Session) => void;
   sessionEnded: (summary: {
@@ -113,6 +121,7 @@ export interface ServerToClientEvents {
   }) => void;
   timerUpdate: (timeLeft: number) => void;
   error: (message: string) => void;
+  participantsUpdate: (participants: Array<{ userId: string; name: string; score: number }>) => void;
 }
 
 export interface ClientToServerEvents {

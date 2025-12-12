@@ -196,6 +196,16 @@ export async function handleJoinSession(
       createdAt: new Date().toISOString(),
     });
 
+    // Notify all clients (including teacher) about updated participants list
+    const participantsList = Array.from(sessionState.participants.values()).map(
+      (p) => ({
+        userId: p.userId,
+        name: p.name,
+        score: p.score,
+      })
+    );
+    io.to(`session:${accessCode}`).emit("participantsUpdate", participantsList);
+
     console.log(
       `Student ${user.first_name} ${user.last_name} joined session ${accessCode}`
     );
@@ -422,11 +432,27 @@ export async function showResults(
     correctAnswerText = currentQuestion.correctAnswer || "";
   }
 
-  // Broadcast results with correct answer
+  // Build participant answers list for the current question
+  const participantAnswers = Array.from(sessionState.participants.values()).map(
+    (p) => {
+      const answerInfo = p.answers.get(currentQuestion.id);
+      return {
+        userId: p.userId,
+        name: p.name,
+        answer: answerInfo?.answer,
+        isCorrect: answerInfo?.isCorrect,
+        points: answerInfo?.points || 0,
+        answered: !!answerInfo,
+      };
+    }
+  );
+
+  // Broadcast results with correct answer and participant answers
   io.to(`session:${accessCode}`).emit("results", {
     questionId: currentQuestion.id,
     correctAnswer: correctAnswerText,
     leaderboard,
+    participantAnswers,
   });
 }
 
@@ -496,6 +522,7 @@ export async function endSession(
  * Handle student leaving session
  */
 export function handleLeaveSession(
+  io: Server<ClientToServerEvents, ServerToClientEvents>,
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
   accessCode: string,
   userId: string
@@ -504,6 +531,17 @@ export function handleLeaveSession(
   if (sessionState) {
     sessionState.participants.delete(userId);
     socket.leave(`session:${accessCode}`);
+    
+    // Notify all clients about updated participants list
+    const participantsList = Array.from(sessionState.participants.values()).map(
+      (p) => ({
+        userId: p.userId,
+        name: p.name,
+        score: p.score,
+      })
+    );
+    io.to(`session:${accessCode}`).emit("participantsUpdate", participantsList);
+    
     console.log(`Student ${userId} left session ${accessCode}`);
   }
 }

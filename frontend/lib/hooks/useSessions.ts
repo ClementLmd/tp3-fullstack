@@ -17,6 +17,12 @@ interface Session {
   participantCount?: number;
 }
 
+interface Participant {
+  userId: string;
+  name: string;
+  score: number;
+}
+
 interface StartSessionPayload {
   quizId: string;
 }
@@ -51,6 +57,24 @@ export function useSession(sessionId: string | null) {
       return response.data;
     },
     enabled: !!sessionId,
+  });
+}
+
+/**
+ * Hook to get session participants
+ */
+export function useSessionParticipants(sessionId: string | null) {
+  return useQuery<{ participants: Participant[] }>({
+    queryKey: ["session", sessionId, "participants"],
+    queryFn: async () => {
+      if (!sessionId) throw new Error("Session ID is required");
+      const response = await apiClient.get<{ participants: Participant[] }>(
+        `/api/sessions/${sessionId}/participants`
+      );
+      return response.data;
+    },
+    enabled: !!sessionId,
+    refetchInterval: 5000, // Poll every 5 seconds as fallback
   });
 }
 
