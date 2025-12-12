@@ -24,6 +24,15 @@ import {
 import { useWebSocket } from "@/lib/hooks/useWebSocket";
 import type { Question } from "shared/src/types";
 
+interface ParticipantAnswer {
+  userId: string;
+  name: string;
+  answer?: string;
+  isCorrect?: boolean;
+  points: number;
+  answered: boolean;
+}
+
 export default function HostQuizPage() {
   const router = useRouter();
   const params = useParams();
@@ -41,11 +50,25 @@ export default function HostQuizPage() {
   const [leaderboard, setLeaderboard] = useState<
     Array<{ userId: string; score: number; name: string }>
   >([]);
+  const [participants, setParticipants] = useState<
+    Array<{ userId: string; name: string; score: number }>
+  >([]);
+  const [participantAnswers, setParticipantAnswers] = useState<ParticipantAnswer[]>([]);
+  const [showAnswerDetails, setShowAnswerDetails] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [participantCount, setParticipantCount] = useState(0);
 
   const { socket, isConnected } = useWebSocket();
   const { data: session } = useSession(sessionId);
+
+  // Join session room when session is created
+  useEffect(() => {
+    if (socket && session?.accessCode) {
+      // Teachers join the room to receive updates (userId not used for teachers)
+      socket.emit("joinSession", { accessCode: session.accessCode, userId: "TEACHER" });
+      console.log("Teacher joined session room:", session.accessCode);
+    }
+  }, [socket, session?.accessCode]);
 
   // Listen to WebSocket events
   useEffect(() => {
@@ -54,6 +77,8 @@ export default function HostQuizPage() {
     socket.on("question", (question: Question) => {
       setCurrentQuestion(question);
       setTimeLeft(question.timeLimit || null);
+      setShowAnswerDetails(false);
+      setParticipantAnswers([]);
       // Update question index based on quiz questions
       if (quiz?.questions) {
         const index = quiz.questions.findIndex((q) => q.id === question.id);
@@ -66,6 +91,15 @@ export default function HostQuizPage() {
     socket.on("results", (data) => {
       setLeaderboard(data.leaderboard);
       setParticipantCount(data.leaderboard.length);
+      if (data.participantAnswers) {
+        setParticipantAnswers(data.participantAnswers);
+        setShowAnswerDetails(true);
+      }
+    });
+
+    socket.on("participantsUpdate", (updatedParticipants) => {
+      setParticipants(updatedParticipants);
+      setParticipantCount(updatedParticipants.length);
     });
 
     socket.on("sessionEnded", () => {
@@ -84,11 +118,12 @@ export default function HostQuizPage() {
     return () => {
       socket.off("question");
       socket.off("results");
+      socket.off("participantsUpdate");
       socket.off("sessionEnded");
       socket.off("timerUpdate");
       socket.off("error");
     };
-  }, [socket, quizId, router]);
+  }, [socket, quizId, router, quiz]);
 
   const handleStartSession = async () => {
     try {
@@ -103,6 +138,8 @@ export default function HostQuizPage() {
   const handleNextQuestion = async () => {
     if (!sessionId) return;
     try {
+      setShowAnswerDetails(false);
+      setParticipantAnswers([]);
       await nextQuestion.mutateAsync(sessionId);
       // Update question index after sending next question
       setCurrentQuestionIndex((prev) => prev + 1);
@@ -247,6 +284,27 @@ export default function HostQuizPage() {
                 </div>
               </div>
 
+              {/* Connected Players */}
+              {participants.length > 0 && (
+                <div className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-xl p-6 border border-cyan-400/30">
+                  <h3 className="text-xl font-bold text-cyan-300 mb-4">
+                    👥 Connected Players ({participants.length})
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {participants.map((participant) => (
+                      <div
+                        key={participant.userId}
+                        className="p-3 bg-slate-700 rounded-lg"
+                      >
+                        <span className="text-white font-medium">
+                          {participant.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Current Question */}
               {currentQuestion && (
                 <div className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-xl p-6 border border-blue-400/30">
@@ -278,6 +336,63 @@ export default function HostQuizPage() {
                         ))}
                       </div>
                     )}
+                </div>
+              )}
+
+              {/* Answer Details (shown after clicking Show Results) */}
+              {showAnswerDetails && participantAnswers.length > 0 && (
+                <div className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-xl p-6 border border-purple-400/30">
+                  <h3 className="text-xl font-bold text-purple-300 mb-4">
+                    📊 Answer Details for Current Question
+                  </h3>
+                  <div className="space-y-2">
+                    {participantAnswers.map((pa) => (
+                      <div
+                        key={pa.userId}
+                        className={`flex items-center justify-between p-3 rounded-lg ${
+                          pa.answered
+                            ? pa.isCorrect
+                              ? "bg-green-900/30 border border-green-500/50"
+                              : "bg-red-900/30 border border-red-500/50"
+                            : "bg-slate-700 border border-slate-500/50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">
+                            {pa.answered ? (pa.isCorrect ? "✅" : "❌") : "⏳"}
+                          </span>
+                          <div>
+                            <span className="text-white font-semibold">
+                              {pa.name}
+                            </span>
+                            {pa.answered && pa.answer && (
+                              <p className="text-sm text-slate-300">
+                                Answer: {pa.answer}
+                              </p>
+                            )}
+                            {!pa.answered && (
+                              <p className="text-sm text-slate-400">
+                                No answer submitted
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span
+                            className={`font-bold ${
+                              pa.answered
+                                ? pa.isCorrect
+                                  ? "text-green-400"
+                                  : "text-red-400"
+                                : "text-slate-400"
+                            }`}
+                          >
+                            {pa.points > 0 ? `+${pa.points}` : pa.points} pts
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 

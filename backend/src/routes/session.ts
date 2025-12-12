@@ -10,6 +10,7 @@ import {
   showQuestionResults,
   stopSession,
   getSession,
+  getSessionParticipants,
 } from "../controllers/sessionController";
 import { authenticateToken, requireRole } from "../middleware/auth";
 import { UserRole } from "shared/src/types/auth";
@@ -25,6 +26,9 @@ router.post("/", startSession);
 
 // GET /api/sessions/:sessionId - Get session details
 router.get("/:sessionId", getSession);
+
+// GET /api/sessions/:sessionId/participants - Get session participants
+router.get("/:sessionId/participants", getSessionParticipants);
 
 // POST /api/sessions/:sessionId/next - Move to next question
 router.post("/:sessionId/next", nextQuestion);

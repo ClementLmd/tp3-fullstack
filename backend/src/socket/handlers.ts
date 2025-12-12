@@ -62,14 +62,17 @@ export function setupSocketHandlers(
     const { userId, role } = auth;
     console.log(`User ${userId} (${role}) connected with socket ${socket.id}`);
 
-    // Handle join session (students only)
+    // Handle join session
     socket.on("joinSession", async (data) => {
-      if (role !== "STUDENT") {
-        socket.emit("error", "Only students can join sessions");
-        return;
+      if (role === "STUDENT") {
+        await handleJoinSession(io, socket, data.accessCode, userId);
+      } else if (role === "TEACHER") {
+        // Teachers can join the room to receive updates
+        socket.join(`session:${data.accessCode}`);
+        console.log(`Teacher ${userId} joined session room ${data.accessCode}`);
+      } else {
+        socket.emit("error", "Invalid role");
       }
-
-      await handleJoinSession(io, socket, data.accessCode, userId);
     });
 
     // Handle answer submission (students only)
@@ -97,7 +100,7 @@ export function setupSocketHandlers(
       const sessionRoom = rooms.find((r) => r.startsWith("session:"));
       if (sessionRoom) {
         const accessCode = sessionRoom.replace("session:", "");
-        handleLeaveSession(socket, accessCode, userId);
+        handleLeaveSession(io, socket, accessCode, userId);
       }
     });
 
@@ -109,7 +112,7 @@ export function setupSocketHandlers(
       rooms.forEach((room) => {
         if (room.startsWith("session:")) {
           const accessCode = room.replace("session:", "");
-          handleLeaveSession(socket, accessCode, userId);
+          handleLeaveSession(io, socket, accessCode, userId);
         }
       });
     });
