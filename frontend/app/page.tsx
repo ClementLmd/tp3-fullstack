@@ -125,7 +125,10 @@ export default function Home() {
                     overview.
                   </p>
                 </div>
-                <div className="p-6 bg-gradient-to-br from-cyan-500/20 to-blue-500/10 rounded-lg border border-cyan-400/50 hover:border-blue-300 transition hover:shadow-lg">
+                <div
+                  onClick={() => router.push("/student/join")}
+                  className="p-6 bg-gradient-to-br from-cyan-500/20 to-blue-500/10 rounded-lg border border-cyan-400/50 hover:border-blue-300 transition hover:shadow-lg cursor-pointer"
+                >
                   <h2 className="text-2xl font-bold mb-2 text-cyan-300">
                     🚀 Join a Session
                   </h2>

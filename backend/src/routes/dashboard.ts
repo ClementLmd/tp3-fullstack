@@ -3,11 +3,11 @@
  * GET endpoints with authentication and role-based filtering
  */
 
-import { Router } from 'express';
-import { AuthRequest, authenticateToken } from '../middleware/auth';
-import { Response } from 'express';
-import { query } from '../db/connection';
-import { UserRole } from 'shared/src/types/auth';
+import { Router } from "express";
+import { AuthRequest, authenticateToken } from "../middleware/auth";
+import { Response } from "express";
+import { query } from "../db/connection";
+import { UserRole } from "shared/src/types/auth";
 
 const router = Router();
 
@@ -20,7 +20,7 @@ router.use(authenticateToken);
  * - Teachers: number of quizzes created, total sessions, average participants
  * - Students: quizzes participated in, average score, total points
  */
-router.get('/stats', async (req: AuthRequest, res: Response) => {
+router.get("/stats", async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId;
     const userRole = req.userRole;
@@ -46,7 +46,7 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
 
       const stats = statsResult.rows[0];
       return res.json({
-        role: 'TEACHER',
+        role: "TEACHER",
         totalQuizzes: parseInt(stats.total_quizzes) || 0,
         totalSessions: parseInt(stats.total_sessions) || 0,
         avgParticipants: parseFloat(stats.avg_participants) || 0,
@@ -67,7 +67,7 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
 
       const stats = statsResult.rows[0];
       return res.json({
-        role: 'STUDENT',
+        role: "STUDENT",
         totalParticipated: parseInt(stats.total_participated) || 0,
         avgScore: parseFloat(stats.avg_score) || 0,
         totalScore: parseInt(stats.total_score) || 0,
@@ -75,8 +75,8 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
       });
     }
   } catch (error) {
-    console.error('Dashboard stats error:', error);
-    res.status(500).json({ error: 'Failed to fetch dashboard statistics' });
+    console.error("Dashboard stats error:", error);
+    res.status(500).json({ error: "Failed to fetch dashboard statistics" });
   }
 });
 
@@ -85,7 +85,7 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
  * - Teachers: get all quizzes they created
  * - Students: get quizzes they participated in
  */
-router.get('/quizzes', async (req: AuthRequest, res: Response) => {
+router.get("/quizzes", async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId;
     const userRole = req.userRole;
@@ -99,7 +99,18 @@ router.get('/quizzes', async (req: AuthRequest, res: Response) => {
           q.description,
           q.created_at,
           COUNT(DISTINCT s.id) as session_count,
-          COUNT(DISTINCT p.id) as total_participants
+          COUNT(DISTINCT p.id) as total_participants,
+          COALESCE(AVG(p.score), 0) as avg_score,
+          COALESCE((
+            SELECT SUM(points) 
+            FROM questions 
+            WHERE quiz_id = q.id
+          ), 0) as max_score,
+          COALESCE((
+            SELECT COUNT(*) 
+            FROM questions 
+            WHERE quiz_id = q.id
+          ), 0) as question_count
          FROM quizzes q
          LEFT JOIN sessions s ON q.id = s.quiz_id
          LEFT JOIN participations p ON s.id = p.session_id
@@ -110,13 +121,16 @@ router.get('/quizzes', async (req: AuthRequest, res: Response) => {
       );
 
       return res.json(
-        quizzesResult.rows.map(q => ({
+        quizzesResult.rows.map((q) => ({
           id: q.id,
           title: q.title,
           description: q.description,
           createdAt: q.created_at,
           sessionCount: parseInt(q.session_count),
           totalParticipants: parseInt(q.total_participants),
+          avgScore: parseFloat(q.avg_score) || 0,
+          maxScore: parseInt(q.max_score) || 0,
+          questionCount: parseInt(q.question_count) || 0,
         }))
       );
     } else {
@@ -127,7 +141,12 @@ router.get('/quizzes', async (req: AuthRequest, res: Response) => {
           q.title,
           q.description,
           q.created_at,
-          COALESCE(MAX(p.score), 0) as best_score
+          COALESCE(MAX(p.score), 0) as best_score,
+          COALESCE((
+            SELECT SUM(points) 
+            FROM questions 
+            WHERE quiz_id = q.id
+          ), 0) as max_score
          FROM quizzes q
          INNER JOIN sessions s ON q.id = s.quiz_id
          INNER JOIN participations p ON s.id = p.session_id
@@ -138,18 +157,19 @@ router.get('/quizzes', async (req: AuthRequest, res: Response) => {
       );
 
       return res.json(
-        quizzesResult.rows.map(q => ({
+        quizzesResult.rows.map((q) => ({
           id: q.id,
           title: q.title,
           description: q.description,
           createdAt: q.created_at,
           bestScore: parseInt(q.best_score),
+          maxScore: parseInt(q.max_score) || 0,
         }))
       );
     }
   } catch (error) {
-    console.error('Dashboard quizzes error:', error);
-    res.status(500).json({ error: 'Failed to fetch quizzes' });
+    console.error("Dashboard quizzes error:", error);
+    res.status(500).json({ error: "Failed to fetch quizzes" });
   }
 });
 
@@ -158,7 +178,7 @@ router.get('/quizzes', async (req: AuthRequest, res: Response) => {
  * - Teachers: get all sessions for their quizzes with statistics
  * - Students: get sessions they participated in
  */
-router.get('/sessions', async (req: AuthRequest, res: Response) => {
+router.get("/sessions", async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId;
     const userRole = req.userRole;
@@ -186,7 +206,7 @@ router.get('/sessions', async (req: AuthRequest, res: Response) => {
       );
 
       return res.json(
-        sessionsResult.rows.map(s => ({
+        sessionsResult.rows.map((s) => ({
           id: s.id,
           quizId: s.quiz_id,
           quizTitle: s.title,
@@ -220,7 +240,7 @@ router.get('/sessions', async (req: AuthRequest, res: Response) => {
       );
 
       return res.json(
-        sessionsResult.rows.map(s => ({
+        sessionsResult.rows.map((s) => ({
           id: s.id,
           quizId: s.quiz_id,
           quizTitle: s.title,
@@ -234,8 +254,8 @@ router.get('/sessions', async (req: AuthRequest, res: Response) => {
       );
     }
   } catch (error) {
-    console.error('Dashboard sessions error:', error);
-    res.status(500).json({ error: 'Failed to fetch sessions' });
+    console.error("Dashboard sessions error:", error);
+    res.status(500).json({ error: "Failed to fetch sessions" });
   }
 });
 
@@ -244,7 +264,7 @@ router.get('/sessions', async (req: AuthRequest, res: Response) => {
  * - Teachers: get detailed stats for their quiz (with top performers, etc.)
  * - Students: cannot access other users' data
  */
-router.get('/quiz/:quizId/details', async (req: AuthRequest, res: Response) => {
+router.get("/quiz/:quizId/details", async (req: AuthRequest, res: Response) => {
   try {
     const { quizId } = req.params;
     const userId = req.userId;
@@ -258,7 +278,9 @@ router.get('/quiz/:quizId/details', async (req: AuthRequest, res: Response) => {
       );
 
       if (ownerCheckResult.rows.length === 0) {
-        return res.status(403).json({ error: 'Not authorized to view this quiz' });
+        return res
+          .status(403)
+          .json({ error: "Not authorized to view this quiz" });
       }
 
       // Get quiz details with performance stats
@@ -281,7 +303,7 @@ router.get('/quiz/:quizId/details', async (req: AuthRequest, res: Response) => {
       );
 
       if (detailsResult.rows.length === 0) {
-        return res.status(404).json({ error: 'Quiz not found' });
+        return res.status(404).json({ error: "Quiz not found" });
       }
 
       const quiz = detailsResult.rows[0];
@@ -316,7 +338,7 @@ router.get('/quiz/:quizId/details', async (req: AuthRequest, res: Response) => {
           highestScore: parseInt(quiz.highest_score),
           lowestScore: parseInt(quiz.lowest_score),
         },
-        topPerformers: topPerformersResult.rows.map(t => ({
+        topPerformers: topPerformersResult.rows.map((t) => ({
           userId: t.id,
           name: `${t.first_name} ${t.last_name}`,
           score: parseInt(t.score),
@@ -324,12 +346,106 @@ router.get('/quiz/:quizId/details', async (req: AuthRequest, res: Response) => {
         })),
       });
     } else {
-      return res.status(403).json({ error: 'Students cannot access this endpoint' });
+      return res
+        .status(403)
+        .json({ error: "Students cannot access this endpoint" });
     }
   } catch (error) {
-    console.error('Quiz details error:', error);
-    res.status(500).json({ error: 'Failed to fetch quiz details' });
+    console.error("Quiz details error:", error);
+    res.status(500).json({ error: "Failed to fetch quiz details" });
   }
 });
+
+/**
+ * GET /dashboard/sessions/:sessionId/results
+ * - Teachers: get detailed results for a session (participants, scores, etc.)
+ * - Students: cannot access other users' data
+ */
+router.get(
+  "/sessions/:sessionId/results",
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const userId = req.userId;
+      const userRole = req.userRole;
+
+      if (userRole === UserRole.TEACHER) {
+        // Verify session belongs to teacher
+        const sessionCheckResult = await query(
+          `SELECT s.id, s.quiz_id, s.access_code, s.is_active, s.started_at, s.ended_at,
+                q.title as quiz_title
+         FROM sessions s
+         INNER JOIN quizzes q ON s.quiz_id = q.id
+         WHERE s.id = $1 AND q.creator_id = $2`,
+          [sessionId, userId]
+        );
+
+        if (sessionCheckResult.rows.length === 0) {
+          return res.status(404).json({ error: "Session not found" });
+        }
+
+        const session = sessionCheckResult.rows[0];
+
+        // Get participants with their scores
+        const participantsResult = await query(
+          `SELECT 
+          p.id as participation_id,
+          p.user_id,
+          p.score,
+          p.joined_at,
+          p.completed_at,
+          u.first_name,
+          u.last_name,
+          u.email,
+          COALESCE((
+            SELECT COUNT(*) 
+            FROM answers a 
+            WHERE a.participation_id = p.id AND a.is_correct IS TRUE
+          ), 0)::integer as correct_answers,
+          COALESCE((
+            SELECT COUNT(*) 
+            FROM questions q
+            WHERE q.quiz_id = $2
+          ), 0)::integer as total_answers
+         FROM participations p
+         INNER JOIN users u ON p.user_id = u.id
+         WHERE p.session_id = $1
+         ORDER BY p.score DESC, u.last_name ASC, u.first_name ASC`,
+          [sessionId, session.quiz_id]
+        );
+
+        return res.json({
+          session: {
+            id: session.id,
+            quizId: session.quiz_id,
+            quizTitle: session.quiz_title,
+            accessCode: session.access_code,
+            isActive: session.is_active,
+            startedAt: session.started_at,
+            endedAt: session.ended_at,
+          },
+          participants: participantsResult.rows.map((p) => ({
+            participationId: p.participation_id,
+            userId: p.user_id,
+            name: `${p.first_name} ${p.last_name}`,
+            email: p.email,
+            score: parseInt(p.score),
+            correctAnswers: parseInt(p.correct_answers) || 0,
+            totalAnswers: parseInt(p.total_answers) || 0,
+            joinedAt: p.joined_at,
+            completedAt: p.completed_at,
+          })),
+        });
+      } else {
+        return res
+          .status(403)
+          .json({ error: "Students cannot access this endpoint" });
+      }
+    } catch (error) {
+      console.error("Session results error:", error);
+      res.status(500).json({ error: "Failed to fetch session results" });
+    }
+  }
+);
 
 export default router;
