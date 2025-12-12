@@ -4,6 +4,9 @@ import { Server } from "socket.io";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
+import swaggerUi from "swagger-ui-express";
+import YAML from "yamljs";
+import path from "path";
 import { pool } from "./db/connection";
 import dashboardRoutes from "./routes/dashboard";
 import authRoutes from "./routes/auth";
@@ -53,6 +56,24 @@ app.use("/dashboard", dashboardRoutes);
 // Session routes mounted at /api/sessions
 // Requires authentication and teacher role
 app.use("/api/sessions", sessionRoutes);
+
+// OpenAPI/Swagger documentation
+// Path resolution: from dist/index.js -> ../../openapi.yaml (project root)
+const openApiPath = path.resolve(__dirname, "../../openapi.yaml");
+let swaggerDocument;
+try {
+  swaggerDocument = YAML.load(openApiPath);
+} catch (error) {
+  console.error("❌ Failed to load OpenAPI spec:", error);
+  console.error("   Looking for file at:", openApiPath);
+}
+
+if (swaggerDocument) {
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+  console.log(
+    "📚 Swagger UI available at http://localhost:" + PORT + "/api-docs"
+  );
+}
 
 // Routes
 app.get("/health", (req, res) => {
