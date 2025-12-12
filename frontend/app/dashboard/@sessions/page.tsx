@@ -34,6 +34,8 @@ export default function SessionsSlot() {
   const handleSessionClick = (sessionId: string) => {
     if (user?.role === 'TEACHER') {
       router.push(`/dashboard/sessions/${sessionId}/results`);
+    } else if (user?.role === 'STUDENT') {
+      router.push(`/dashboard/sessions/${sessionId}/summary`);
     }
   };
 
@@ -65,7 +67,7 @@ export default function SessionsSlot() {
           key={session.id}
           onClick={() => handleSessionClick(session.id)}
           className={`p-4 hover:bg-slate-700/40 transition-all duration-300 group ${
-            user?.role === 'TEACHER' ? 'cursor-pointer' : 'cursor-default'
+            user?.role === 'TEACHER' || user?.role === 'STUDENT' ? 'cursor-pointer' : 'cursor-default'
           }`}
           style={{animationDelay: `${index * 0.05}s`}}
         >
