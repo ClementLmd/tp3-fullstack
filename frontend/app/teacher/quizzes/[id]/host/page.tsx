@@ -294,13 +294,10 @@ export default function HostQuizPage() {
                     {participants.map((participant) => (
                       <div
                         key={participant.userId}
-                        className="flex items-center justify-between p-3 bg-slate-700 rounded-lg"
+                        className="p-3 bg-slate-700 rounded-lg"
                       >
                         <span className="text-white font-medium">
                           {participant.name}
-                        </span>
-                        <span className="text-cyan-400 font-bold">
-                          {participant.score} pts
                         </span>
                       </div>
                     ))}
