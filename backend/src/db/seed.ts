@@ -111,8 +111,8 @@ async function seed() {
     const quiz2Id = quiz2Result.rows[0]?.id || 'error';
     const quiz3Id = quiz3Result.rows[0]?.id || 'error';
 
-    // Create questions for quiz1
-    await query(
+    // Create questions for quiz1 (Mathematics Basics)
+    const q1Result = await query(
       `INSERT INTO questions (quiz_id, text, type, options, correct_answer, "order", points, time_limit)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        ON CONFLICT (quiz_id, "order") DO UPDATE SET
@@ -121,7 +121,8 @@ async function seed() {
          options = EXCLUDED.options,
          correct_answer = EXCLUDED.correct_answer,
          points = EXCLUDED.points,
-         time_limit = EXCLUDED.time_limit`,
+         time_limit = EXCLUDED.time_limit
+       RETURNING id`,
       [
         quiz1Id,
         'What is 2 + 2?',
@@ -134,7 +135,7 @@ async function seed() {
       ]
     );
 
-    await query(
+    const q2Result = await query(
       `INSERT INTO questions (quiz_id, text, type, options, correct_answer, "order", points, time_limit)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        ON CONFLICT (quiz_id, "order") DO UPDATE SET
@@ -143,7 +144,8 @@ async function seed() {
          options = EXCLUDED.options,
          correct_answer = EXCLUDED.correct_answer,
          points = EXCLUDED.points,
-         time_limit = EXCLUDED.time_limit`,
+         time_limit = EXCLUDED.time_limit
+       RETURNING id`,
       [
         quiz1Id,
         'Is 5 * 3 equal to 15?',
@@ -156,8 +158,7 @@ async function seed() {
       ]
     );
 
-    // Create questions for quiz2
-    await query(
+    const q3Result = await query(
       `INSERT INTO questions (quiz_id, text, type, options, correct_answer, "order", points, time_limit)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        ON CONFLICT (quiz_id, "order") DO UPDATE SET
@@ -166,7 +167,36 @@ async function seed() {
          options = EXCLUDED.options,
          correct_answer = EXCLUDED.correct_answer,
          points = EXCLUDED.points,
-         time_limit = EXCLUDED.time_limit`,
+         time_limit = EXCLUDED.time_limit
+       RETURNING id`,
+      [
+        quiz1Id,
+        'What is 10 / 2?',
+        'MULTIPLE_CHOICE',
+        JSON.stringify({ choices: ['4', '5', '6', '7'], correctAnswer: 1 }),
+        '5',
+        3,
+        10,
+        25
+      ]
+    );
+
+    const q1Id = q1Result.rows[0]?.id;
+    const q2Id = q2Result.rows[0]?.id;
+    const q3Id = q3Result.rows[0]?.id;
+
+    // Create questions for quiz2 (Science Fundamentals)
+    const q4Result = await query(
+      `INSERT INTO questions (quiz_id, text, type, options, correct_answer, "order", points, time_limit)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT (quiz_id, "order") DO UPDATE SET
+         text = EXCLUDED.text,
+         type = EXCLUDED.type,
+         options = EXCLUDED.options,
+         correct_answer = EXCLUDED.correct_answer,
+         points = EXCLUDED.points,
+         time_limit = EXCLUDED.time_limit
+       RETURNING id`,
       [
         quiz2Id,
         'What is the chemical symbol for gold?',
@@ -179,8 +209,7 @@ async function seed() {
       ]
     );
 
-    // Create questions for quiz3
-    await query(
+    const q5Result = await query(
       `INSERT INTO questions (quiz_id, text, type, options, correct_answer, "order", points, time_limit)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        ON CONFLICT (quiz_id, "order") DO UPDATE SET
@@ -189,7 +218,35 @@ async function seed() {
          options = EXCLUDED.options,
          correct_answer = EXCLUDED.correct_answer,
          points = EXCLUDED.points,
-         time_limit = EXCLUDED.time_limit`,
+         time_limit = EXCLUDED.time_limit
+       RETURNING id`,
+      [
+        quiz2Id,
+        'Water is composed of H2O',
+        'TRUE_FALSE',
+        null,
+        'true',
+        2,
+        10,
+        20
+      ]
+    );
+
+    const q4Id = q4Result.rows[0]?.id;
+    const q5Id = q5Result.rows[0]?.id;
+
+    // Create questions for quiz3 (History 101)
+    const q6Result = await query(
+      `INSERT INTO questions (quiz_id, text, type, options, correct_answer, "order", points, time_limit)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT (quiz_id, "order") DO UPDATE SET
+         text = EXCLUDED.text,
+         type = EXCLUDED.type,
+         options = EXCLUDED.options,
+         correct_answer = EXCLUDED.correct_answer,
+         points = EXCLUDED.points,
+         time_limit = EXCLUDED.time_limit
+       RETURNING id`,
       [
         quiz3Id,
         'Was the signing of the Declaration of Independence in 1776?',
@@ -202,7 +259,10 @@ async function seed() {
       ]
     );
 
+    const q6Id = q6Result.rows[0]?.id;
+
     // Create sessions
+    // Session 1: Active session for quiz1 (for testing live quiz)
     const session1Result = await query(
       `INSERT INTO sessions (quiz_id, access_code, is_active, current_question_index, started_at)
        VALUES ($1, $2, $3, $4, $5)
@@ -216,6 +276,7 @@ async function seed() {
       [quiz1Id, 'ABC123', true, 0, new Date()]
     );
 
+    // Session 2: Completed session for quiz1 (for testing summary view)
     const session2Result = await query(
       `INSERT INTO sessions (quiz_id, access_code, is_active, current_question_index, started_at, ended_at)
        VALUES ($1, $2, $3, $4, $5, $6)
@@ -226,10 +287,25 @@ async function seed() {
          started_at = EXCLUDED.started_at,
          ended_at = EXCLUDED.ended_at
        RETURNING id`,
-      [quiz2Id, 'DEF456', false, 1, new Date(Date.now() - 3600000), new Date(Date.now() - 1800000)]
+      [quiz1Id, 'XYZ999', false, 3, new Date(Date.now() - 7200000), new Date(Date.now() - 3600000)]
     );
 
+    // Session 3: Completed session for quiz2
     const session3Result = await query(
+      `INSERT INTO sessions (quiz_id, access_code, is_active, current_question_index, started_at, ended_at)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (access_code) DO UPDATE SET
+         quiz_id = EXCLUDED.quiz_id,
+         is_active = EXCLUDED.is_active,
+         current_question_index = EXCLUDED.current_question_index,
+         started_at = EXCLUDED.started_at,
+         ended_at = EXCLUDED.ended_at
+       RETURNING id`,
+      [quiz2Id, 'DEF456', false, 2, new Date(Date.now() - 10800000), new Date(Date.now() - 5400000)]
+    );
+
+    // Session 4: Active session for quiz3
+    const session4Result = await query(
       `INSERT INTO sessions (quiz_id, access_code, is_active, current_question_index, started_at)
        VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (access_code) DO UPDATE SET
@@ -245,8 +321,10 @@ async function seed() {
     const session1Id = session1Result.rows[0]?.id || 'error';
     const session2Id = session2Result.rows[0]?.id || 'error';
     const session3Id = session3Result.rows[0]?.id || 'error';
+    const session4Id = session4Result.rows[0]?.id || 'error';
 
     // Create participations
+    // Session 1 (active): student1 and student2 participating
     const part1Result = await query(
       `INSERT INTO participations (session_id, user_id, score, completed_at)
        VALUES ($1, $2, $3, $4)
@@ -254,7 +332,7 @@ async function seed() {
          score = EXCLUDED.score,
          completed_at = EXCLUDED.completed_at
        RETURNING id`,
-      [session1Id, student1Id, 15, new Date()]
+      [session1Id, student1Id, 0, null] // Active session, not completed
     );
 
     const part2Result = await query(
@@ -264,9 +342,10 @@ async function seed() {
          score = EXCLUDED.score,
          completed_at = EXCLUDED.completed_at
        RETURNING id`,
-      [session1Id, student2Id, 18, new Date()]
+      [session1Id, student2Id, 0, null] // Active session, not completed
     );
 
+    // Session 2 (completed quiz1): student1 completed with all correct answers (30 points)
     const part3Result = await query(
       `INSERT INTO participations (session_id, user_id, score, completed_at)
        VALUES ($1, $2, $3, $4)
@@ -274,9 +353,10 @@ async function seed() {
          score = EXCLUDED.score,
          completed_at = EXCLUDED.completed_at
        RETURNING id`,
-      [session2Id, student1Id, 20, new Date()]
+      [session2Id, student1Id, 30, new Date(Date.now() - 3600000)]
     );
 
+    // Session 2: student2 completed with partial answers (20 points - 2 correct, 1 missed)
     const part4Result = await query(
       `INSERT INTO participations (session_id, user_id, score, completed_at)
        VALUES ($1, $2, $3, $4)
@@ -284,9 +364,10 @@ async function seed() {
          score = EXCLUDED.score,
          completed_at = EXCLUDED.completed_at
        RETURNING id`,
-      [session2Id, student2Id, 17, new Date()]
+      [session2Id, student2Id, 20, new Date(Date.now() - 3600000)]
     );
 
+    // Session 3 (completed quiz2): student1 completed with all correct (20 points)
     const part5Result = await query(
       `INSERT INTO participations (session_id, user_id, score, completed_at)
        VALUES ($1, $2, $3, $4)
@@ -294,7 +375,29 @@ async function seed() {
          score = EXCLUDED.score,
          completed_at = EXCLUDED.completed_at
        RETURNING id`,
-      [session3Id, student3Id, 10, new Date()]
+      [session3Id, student1Id, 20, new Date(Date.now() - 5400000)]
+    );
+
+    // Session 3: student2 completed with one correct (10 points)
+    const part6Result = await query(
+      `INSERT INTO participations (session_id, user_id, score, completed_at)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (session_id, user_id) DO UPDATE SET
+         score = EXCLUDED.score,
+         completed_at = EXCLUDED.completed_at
+       RETURNING id`,
+      [session3Id, student2Id, 10, new Date(Date.now() - 5400000)]
+    );
+
+    // Session 4 (active): student3 participating
+    const part7Result = await query(
+      `INSERT INTO participations (session_id, user_id, score, completed_at)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (session_id, user_id) DO UPDATE SET
+         score = EXCLUDED.score,
+         completed_at = EXCLUDED.completed_at
+       RETURNING id`,
+      [session4Id, student3Id, 0, null] // Active session, not completed
     );
 
     const part1Id = part1Result.rows[0]?.id || 'error';
@@ -302,16 +405,13 @@ async function seed() {
     const part3Id = part3Result.rows[0]?.id || 'error';
     const part4Id = part4Result.rows[0]?.id || 'error';
     const part5Id = part5Result.rows[0]?.id || 'error';
+    const part6Id = part6Result.rows[0]?.id || 'error';
+    const part7Id = part7Result.rows[0]?.id || 'error';
 
-    // Get question IDs for answers
-    const questionsResult = await query(
-      `SELECT id FROM questions ORDER BY created_at`
-    );
-
-    if (questionsResult.rows.length >= 3) {
-      const [q1, q2, q3] = questionsResult.rows;
-
-      // Create answers
+    // Create answers for completed sessions
+    // Session 2 (quiz1 completed): student1 - all 3 questions correct (30 points total)
+    if (q1Id && q2Id && q3Id) {
+      // Student1: All correct answers for quiz1
       await query(
         `INSERT INTO answers (question_id, participation_id, answer, is_correct, points)
          VALUES ($1, $2, $3, $4, $5)
@@ -319,7 +419,7 @@ async function seed() {
            answer = EXCLUDED.answer,
            is_correct = EXCLUDED.is_correct,
            points = EXCLUDED.points`,
-        [q1.id, part1Id, '4', true, 10]
+        [q1Id, part3Id, '4', true, 10]
       );
 
       await query(
@@ -329,7 +429,7 @@ async function seed() {
            answer = EXCLUDED.answer,
            is_correct = EXCLUDED.is_correct,
            points = EXCLUDED.points`,
-        [q2.id, part1Id, 'true', true, 5]
+        [q2Id, part3Id, 'true', true, 10]
       );
 
       await query(
@@ -339,7 +439,18 @@ async function seed() {
            answer = EXCLUDED.answer,
            is_correct = EXCLUDED.is_correct,
            points = EXCLUDED.points`,
-        [q1.id, part2Id, '4', true, 10]
+        [q3Id, part3Id, '5', true, 10]
+      );
+
+      // Student2: 2 correct, 1 missed (20 points total)
+      await query(
+        `INSERT INTO answers (question_id, participation_id, answer, is_correct, points)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (question_id, participation_id) DO UPDATE SET
+           answer = EXCLUDED.answer,
+           is_correct = EXCLUDED.is_correct,
+           points = EXCLUDED.points`,
+        [q1Id, part4Id, '4', true, 10]
       );
 
       await query(
@@ -349,7 +460,21 @@ async function seed() {
            answer = EXCLUDED.answer,
            is_correct = EXCLUDED.is_correct,
            points = EXCLUDED.points`,
-        [q2.id, part2Id, 'true', true, 8]
+        [q2Id, part4Id, 'true', true, 10]
+      );
+      // q3 not answered (time ran out)
+    }
+
+    // Session 3 (quiz2 completed): student1 - all correct (20 points)
+    if (q4Id && q5Id) {
+      await query(
+        `INSERT INTO answers (question_id, participation_id, answer, is_correct, points)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (question_id, participation_id) DO UPDATE SET
+           answer = EXCLUDED.answer,
+           is_correct = EXCLUDED.is_correct,
+           points = EXCLUDED.points`,
+        [q4Id, part5Id, 'Au', true, 10]
       );
 
       await query(
@@ -359,17 +484,51 @@ async function seed() {
            answer = EXCLUDED.answer,
            is_correct = EXCLUDED.is_correct,
            points = EXCLUDED.points`,
-        [q3.id, part3Id, 'Au', true, 10]
+        [q5Id, part5Id, 'true', true, 10]
+      );
+
+      // Student2: 1 correct, 1 incorrect (10 points)
+      await query(
+        `INSERT INTO answers (question_id, participation_id, answer, is_correct, points)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (question_id, participation_id) DO UPDATE SET
+           answer = EXCLUDED.answer,
+           is_correct = EXCLUDED.is_correct,
+           points = EXCLUDED.points`,
+        [q4Id, part6Id, 'Au', true, 10]
+      );
+
+      await query(
+        `INSERT INTO answers (question_id, participation_id, answer, is_correct, points)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (question_id, participation_id) DO UPDATE SET
+           answer = EXCLUDED.answer,
+           is_correct = EXCLUDED.is_correct,
+           points = EXCLUDED.points`,
+        [q5Id, part6Id, 'false', false, 0]
       );
     }
 
     console.log('✅ Seed data created successfully');
-    console.log('📝 Test accounts:');
-    console.log('   Teacher 1: teacher1@example.com / teacher123');
+    console.log('');
+    console.log('📝 Quick Login Accounts:');
+    console.log('   👨‍🏫 Teacher: teacher1@example.com / teacher123');
+    console.log('      - Has 2 quizzes: "Mathematics Basics" (3 questions) and "Science Fundamentals" (2 questions)');
+    console.log('      - Has active and completed sessions');
+    console.log('');
+    console.log('   👨‍🎓 Student: student1@example.com / student123');
+    console.log('      - Completed quiz1 session (30/30 points - perfect score!)');
+    console.log('      - Completed quiz2 session (20/20 points - perfect score!)');
+    console.log('      - Can view quiz summaries in dashboard');
+    console.log('');
+    console.log('📚 Other Test Accounts:');
     console.log('   Teacher 2: teacher2@example.com / teacher123');
-    console.log('   Student 1: student1@example.com / student123');
     console.log('   Student 2: student2@example.com / student123');
     console.log('   Student 3: student3@example.com / student123');
+    console.log('');
+    console.log('🎯 Active Sessions (for testing live quizzes):');
+    console.log('   Session ABC123 - Quiz: Mathematics Basics (teacher1)');
+    console.log('   Session GHI789 - Quiz: History 101 (teacher2)');
     
     process.exit(0);
   } catch (error) {

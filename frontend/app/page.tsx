@@ -155,7 +155,7 @@ export default function Home() {
                       👨‍🏫 Teacher Account
                     </h3>
                     <p className="text-sm text-slate-400">
-                      teacher@example.com
+                      teacher1@example.com
                     </p>
                   </div>
                 </div>
@@ -178,7 +178,7 @@ export default function Home() {
                       👨‍🎓 Student Account
                     </h3>
                     <p className="text-sm text-slate-400">
-                      student@example.com
+                      student1@example.com
                     </p>
                   </div>
                 </div>
