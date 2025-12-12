@@ -356,4 +356,96 @@ router.get("/quiz/:quizId/details", async (req: AuthRequest, res: Response) => {
   }
 });
 
+/**
+ * GET /dashboard/sessions/:sessionId/results
+ * - Teachers: get detailed results for a session (participants, scores, etc.)
+ * - Students: cannot access other users' data
+ */
+router.get(
+  "/sessions/:sessionId/results",
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const userId = req.userId;
+      const userRole = req.userRole;
+
+      if (userRole === UserRole.TEACHER) {
+        // Verify session belongs to teacher
+        const sessionCheckResult = await query(
+          `SELECT s.id, s.quiz_id, s.access_code, s.is_active, s.started_at, s.ended_at,
+                q.title as quiz_title
+         FROM sessions s
+         INNER JOIN quizzes q ON s.quiz_id = q.id
+         WHERE s.id = $1 AND q.creator_id = $2`,
+          [sessionId, userId]
+        );
+
+        if (sessionCheckResult.rows.length === 0) {
+          return res.status(404).json({ error: "Session not found" });
+        }
+
+        const session = sessionCheckResult.rows[0];
+
+        // Get participants with their scores
+        const participantsResult = await query(
+          `SELECT 
+          p.id as participation_id,
+          p.user_id,
+          p.score,
+          p.joined_at,
+          p.completed_at,
+          u.first_name,
+          u.last_name,
+          u.email,
+          COALESCE((
+            SELECT COUNT(*) 
+            FROM answers a 
+            WHERE a.participation_id = p.id AND a.is_correct IS TRUE
+          ), 0)::integer as correct_answers,
+          COALESCE((
+            SELECT COUNT(*) 
+            FROM questions q
+            WHERE q.quiz_id = $2
+          ), 0)::integer as total_answers
+         FROM participations p
+         INNER JOIN users u ON p.user_id = u.id
+         WHERE p.session_id = $1
+         ORDER BY p.score DESC, u.last_name ASC, u.first_name ASC`,
+          [sessionId, session.quiz_id]
+        );
+
+        return res.json({
+          session: {
+            id: session.id,
+            quizId: session.quiz_id,
+            quizTitle: session.quiz_title,
+            accessCode: session.access_code,
+            isActive: session.is_active,
+            startedAt: session.started_at,
+            endedAt: session.ended_at,
+          },
+          participants: participantsResult.rows.map((p) => ({
+            participationId: p.participation_id,
+            userId: p.user_id,
+            name: `${p.first_name} ${p.last_name}`,
+            email: p.email,
+            score: parseInt(p.score),
+            correctAnswers: parseInt(p.correct_answers) || 0,
+            totalAnswers: parseInt(p.total_answers) || 0,
+            joinedAt: p.joined_at,
+            completedAt: p.completed_at,
+          })),
+        });
+      } else {
+        return res
+          .status(403)
+          .json({ error: "Students cannot access this endpoint" });
+      }
+    } catch (error) {
+      console.error("Session results error:", error);
+      res.status(500).json({ error: "Failed to fetch session results" });
+    }
+  }
+);
+
 export default router;

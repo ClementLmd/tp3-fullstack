@@ -272,21 +272,25 @@ export async function handleAnswer(
       answeredAt: new Date(),
     });
 
-    // Save to database
-    await query(
+    // Save to database - get or create participation and return its ID
+    const participationResult = await query(
       `INSERT INTO participations (session_id, user_id, score)
        VALUES ($1, $2, $3)
        ON CONFLICT (session_id, user_id) 
-       DO UPDATE SET score = $3`,
+       DO UPDATE SET score = $3
+       RETURNING id`,
       [sessionState.sessionId, userId, participant.score]
     );
 
+    const participationId = participationResult.rows[0].id;
+
+    // Insert answer with the participation_id
+    // Note: We don't use ON CONFLICT here because the code already checks
+    // if the user has answered (participant.answers.has(questionId))
     await query(
       `INSERT INTO answers (question_id, participation_id, answer, is_correct, points)
-       SELECT $1, p.id, $2, $3, $4
-       FROM participations p
-       WHERE p.session_id = $5 AND p.user_id = $6`,
-      [questionId, answer, isCorrect, points, sessionState.sessionId, userId]
+       VALUES ($1, $2, $3, $4, $5)`,
+      [questionId, participationId, answer, isCorrect, points]
     );
 
     console.log(

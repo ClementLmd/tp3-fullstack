@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
 import { useAuthStore } from '@/lib/store/authStore';
@@ -20,6 +21,8 @@ interface Session {
 }
 
 export default function SessionsSlot() {
+  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
   const { data: sessions, isLoading } = useQuery({
     queryKey: ['dashboard-sessions'],
     queryFn: async () => {
@@ -28,7 +31,11 @@ export default function SessionsSlot() {
     },
   });
 
-  const user = useAuthStore((s) => s.user);
+  const handleSessionClick = (sessionId: string) => {
+    if (user?.role === 'TEACHER') {
+      router.push(`/dashboard/sessions/${sessionId}/results`);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -56,7 +63,10 @@ export default function SessionsSlot() {
       {sessions.slice(0, 10).map((session, index) => (
         <div
           key={session.id}
-          className="p-4 hover:bg-slate-700/40 transition-all duration-300 group cursor-pointer"
+          onClick={() => handleSessionClick(session.id)}
+          className={`p-4 hover:bg-slate-700/40 transition-all duration-300 group ${
+            user?.role === 'TEACHER' ? 'cursor-pointer' : 'cursor-default'
+          }`}
           style={{animationDelay: `${index * 0.05}s`}}
         >
           <div className="flex items-start justify-between gap-2">
