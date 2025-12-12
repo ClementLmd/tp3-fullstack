@@ -32,6 +32,18 @@ export default function JoinSessionPage() {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [sessionEnded, setSessionEnded] = useState(false);
   const [isTimeUp, setIsTimeUp] = useState(false);
+  const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
+  const [quizSummary, setQuizSummary] = useState<{
+    questions: Array<{
+      questionId: string;
+      questionText: string;
+      correctAnswer: string;
+      studentAnswer?: string;
+      isCorrect?: boolean;
+      points: number;
+    }>;
+    finalScore: number;
+  } | null>(null);
 
   const { socket, isConnected, joinSession, submitAnswer } = useWebSocket();
 
@@ -49,10 +61,12 @@ export default function JoinSessionPage() {
       setHasAnswered(false);
       setTimeLeft(question.timeLimit || null);
       setIsTimeUp(false); // Reset time up state for new question
+      setCorrectAnswer(null); // Reset correct answer for new question
     });
 
     socket.on("results", (data) => {
       setLeaderboard(data.leaderboard);
+      setCorrectAnswer(data.correctAnswer); // Show correct answer
       // Find my score
       const myEntry = data.leaderboard.find((e) => e.userId === user?.id);
       if (myEntry) {
@@ -60,7 +74,8 @@ export default function JoinSessionPage() {
       }
     });
 
-    socket.on("sessionEnded", () => {
+    socket.on("sessionEnded", (summary) => {
+      setQuizSummary(summary);
       setSessionEnded(true);
     });
 
@@ -126,25 +141,110 @@ export default function JoinSessionPage() {
   if (sessionEnded) {
     return (
       <AuthGuard roles={[UserRole.STUDENT]}>
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-8">
-          <div className="max-w-md w-full bg-gradient-to-br from-slate-800 to-slate-700 rounded-2xl p-8 border border-green-400/30 text-center">
-            <div className="text-6xl mb-4">🎉</div>
-            <h2 className="text-3xl font-bold text-green-300 mb-4">
-              Session Terminée !
-            </h2>
-            <p className="text-slate-300 mb-6">
-              Votre score final :{" "}
-              <span className="text-2xl font-bold text-yellow-400">
-                {myScore}
-              </span>{" "}
-              points
-            </p>
-            <button
-              onClick={() => router.push("/dashboard")}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-cyan-700 transition"
-            >
-              Back to Dashboard
-            </button>
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-8">
+          <div className="max-w-4xl mx-auto">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className="text-6xl mb-4">🎉</div>
+              <h2 className="text-4xl font-bold bg-gradient-to-r from-green-300 to-emerald-300 bg-clip-text text-transparent mb-4">
+                Quiz Terminé !
+              </h2>
+              <div className="bg-gradient-to-br from-yellow-800 to-orange-800 rounded-xl p-6 border border-yellow-400/50 inline-block">
+                <p className="text-yellow-200 text-sm mb-2">Score Final</p>
+                <p className="text-5xl font-black text-white">
+                  {quizSummary?.finalScore || myScore}
+                </p>
+                <p className="text-yellow-300 text-sm mt-2">points</p>
+              </div>
+            </div>
+
+            {/* Quiz Summary */}
+            {quizSummary && quizSummary.questions.length > 0 && (
+              <div className="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden mb-8">
+                <div className="p-6 border-b border-slate-700">
+                  <h3 className="text-2xl font-bold text-white">
+                    📋 Récapitulatif des Questions
+                  </h3>
+                </div>
+                <div className="divide-y divide-slate-700">
+                  {quizSummary.questions.map((q, index) => (
+                    <div key={q.questionId} className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3">
+                            <span className="text-lg font-bold text-blue-300">
+                              Question {index + 1}
+                            </span>
+                            {q.isCorrect !== undefined && (
+                              <span
+                                className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                                  q.isCorrect
+                                    ? "bg-green-500/20 text-green-300"
+                                    : "bg-red-500/20 text-red-300"
+                                }`}
+                              >
+                                {q.isCorrect ? "✅ Correct" : "❌ Incorrect"}
+                              </span>
+                            )}
+                            {q.points > 0 && (
+                              <span className="text-yellow-300 text-sm">
+                                +{q.points} points
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-white text-lg mb-4">
+                            {q.questionText}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                          <p className="text-green-300 text-sm font-semibold mb-1">
+                            ✅ Bonne réponse:
+                          </p>
+                          <p className="text-white">{q.correctAnswer}</p>
+                        </div>
+                        {q.studentAnswer !== undefined && (
+                          <div
+                            className={`p-3 rounded-lg border ${
+                              q.isCorrect
+                                ? "bg-green-500/10 border-green-500/30"
+                                : "bg-red-500/10 border-red-500/30"
+                            }`}
+                          >
+                            <p
+                              className={`text-sm font-semibold mb-1 ${
+                                q.isCorrect ? "text-green-300" : "text-red-300"
+                              }`}
+                            >
+                              {q.isCorrect ? "✅" : "❌"} Votre réponse:
+                            </p>
+                            <p className="text-white">{q.studentAnswer}</p>
+                          </div>
+                        )}
+                        {q.studentAnswer === undefined && (
+                          <div className="p-3 bg-slate-700/50 border border-slate-600 rounded-lg">
+                            <p className="text-slate-400 text-sm">
+                              ⏱️ Aucune réponse soumise (temps écoulé)
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Back Button */}
+            <div className="text-center">
+              <button
+                onClick={() => router.push("/dashboard")}
+                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-cyan-700 transition transform hover:scale-105"
+              >
+                Retour au Dashboard
+              </button>
+            </div>
           </div>
         </div>
       </AuthGuard>
@@ -316,6 +416,16 @@ export default function JoinSessionPage() {
                       <p className="text-red-300 font-semibold">
                         ⏱️ Time is up! You can no longer answer this question.
                       </p>
+                    </div>
+                  )}
+
+                  {/* Correct Answer Display */}
+                  {correctAnswer && (
+                    <div className="mt-4 p-4 bg-green-500/20 border border-green-500/50 rounded-lg">
+                      <p className="text-green-300 font-semibold mb-2">
+                        ✅ Correct Answer:
+                      </p>
+                      <p className="text-white text-lg">{correctAnswer}</p>
                     </div>
                   )}
 

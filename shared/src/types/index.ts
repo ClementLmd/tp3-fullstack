@@ -96,10 +96,21 @@ export interface ServerToClientEvents {
   question: (question: Question) => void;
   results: (results: {
     questionId: string;
+    correctAnswer: string;
     leaderboard: Array<{ userId: string; score: number; name: string }>;
   }) => void;
   sessionStarted: (session: Session) => void;
-  sessionEnded: () => void;
+  sessionEnded: (summary: {
+    questions: Array<{
+      questionId: string;
+      questionText: string;
+      correctAnswer: string;
+      studentAnswer?: string;
+      isCorrect?: boolean;
+      points: number;
+    }>;
+    finalScore: number;
+  }) => void;
   timerUpdate: (timeLeft: number) => void;
   error: (message: string) => void;
 }

@@ -437,9 +437,83 @@ router.get(
           })),
         });
       } else {
-        return res
-          .status(403)
-          .json({ error: "Students cannot access this endpoint" });
+        // Student's own session summary
+        // Verify student participated in this session
+        const participationCheckResult = await query(
+          `SELECT p.id as participation_id, p.score, s.quiz_id
+           FROM participations p
+           INNER JOIN sessions s ON p.session_id = s.id
+           WHERE p.session_id = $1 AND p.user_id = $2`,
+          [sessionId, userId]
+        );
+
+        if (participationCheckResult.rows.length === 0) {
+          return res
+            .status(404)
+            .json({ error: "Session not found or you did not participate" });
+        }
+
+        const participation = participationCheckResult.rows[0];
+        const quizId = participation.quiz_id;
+
+        // Get all questions from the quiz
+        const questionsResult = await query(
+          `SELECT id, text, type, options, correct_answer, points
+           FROM questions
+           WHERE quiz_id = $1
+           ORDER BY "order" ASC`,
+          [quizId]
+        );
+
+        // Get student's answers
+        const answersResult = await query(
+          `SELECT question_id, answer, is_correct, points
+           FROM answers
+           WHERE participation_id = $1`,
+          [participation.participation_id]
+        );
+
+        // Create a map of answers by question_id
+        const answersMap = new Map(
+          answersResult.rows.map((a) => [
+            a.question_id,
+            {
+              answer: a.answer,
+              isCorrect: a.is_correct,
+              points: parseInt(a.points) || 0,
+            },
+          ])
+        );
+
+        // Build summary
+        const summary = {
+          questions: questionsResult.rows.map((question) => {
+            const answerInfo = answersMap.get(question.id);
+            let correctAnswerText = "";
+
+            if (question.type === "MULTIPLE_CHOICE") {
+              const options = question.options as {
+                choices: string[];
+                correctAnswer: number;
+              };
+              correctAnswerText = options.choices[options.correctAnswer];
+            } else {
+              correctAnswerText = question.correct_answer || "";
+            }
+
+            return {
+              questionId: question.id,
+              questionText: question.text,
+              correctAnswer: correctAnswerText,
+              studentAnswer: answerInfo?.answer,
+              isCorrect: answerInfo?.isCorrect,
+              points: answerInfo?.points || 0,
+            };
+          }),
+          finalScore: parseInt(participation.score) || 0,
+        };
+
+        return res.json(summary);
       }
     } catch (error) {
       console.error("Session results error:", error);

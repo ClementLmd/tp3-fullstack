@@ -410,9 +410,22 @@ export async function showResults(
     }))
     .sort((a, b) => b.score - a.score);
 
-  // Broadcast results
+  // Get correct answer text
+  let correctAnswerText = "";
+  if (currentQuestion.type === "MULTIPLE_CHOICE") {
+    const options = currentQuestion.options as {
+      choices: string[];
+      correctAnswer: number;
+    };
+    correctAnswerText = options.choices[options.correctAnswer];
+  } else {
+    correctAnswerText = currentQuestion.correctAnswer || "";
+  }
+
+  // Broadcast results with correct answer
   io.to(`session:${accessCode}`).emit("results", {
     questionId: currentQuestion.id,
+    correctAnswer: correctAnswerText,
     leaderboard,
   });
 }
@@ -440,8 +453,40 @@ export async function endSession(
     [sessionState.sessionId]
   );
 
-  // Broadcast session ended
-  io.to(`session:${accessCode}`).emit("sessionEnded");
+  // Build summary for each participant
+  const participants = Array.from(sessionState.participants.values());
+
+  for (const participant of participants) {
+    const summary = {
+      questions: sessionState.questions.map((question) => {
+        const answerInfo = participant.answers.get(question.id);
+        let correctAnswerText = "";
+
+        if (question.type === "MULTIPLE_CHOICE") {
+          const options = question.options as {
+            choices: string[];
+            correctAnswer: number;
+          };
+          correctAnswerText = options.choices[options.correctAnswer];
+        } else {
+          correctAnswerText = question.correctAnswer || "";
+        }
+
+        return {
+          questionId: question.id,
+          questionText: question.text,
+          correctAnswer: correctAnswerText,
+          studentAnswer: answerInfo?.answer,
+          isCorrect: answerInfo?.isCorrect,
+          points: answerInfo?.points || 0,
+        };
+      }),
+      finalScore: participant.score,
+    };
+
+    // Send summary to each participant individually
+    io.to(participant.socketId).emit("sessionEnded", summary);
+  }
 
   // Clean up
   activeSessions.delete(accessCode);
