@@ -74,7 +74,8 @@ export function useSessionParticipants(sessionId: string | null) {
       return response.data;
     },
     enabled: !!sessionId,
-    refetchInterval: 5000, // Poll every 5 seconds as fallback
+    // No automatic refetch - WebSocket provides real-time updates
+    // This hook is available for manual fetches or when WebSocket is unavailable
   });
 }
 

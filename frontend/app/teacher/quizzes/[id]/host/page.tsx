@@ -64,7 +64,8 @@ export default function HostQuizPage() {
   // Join session room when session is created
   useEffect(() => {
     if (socket && session?.accessCode) {
-      socket.emit("joinSession", { accessCode: session.accessCode, userId: "" });
+      // Teachers join the room to receive updates (userId not used for teachers)
+      socket.emit("joinSession", { accessCode: session.accessCode, userId: "TEACHER" });
       console.log("Teacher joined session room:", session.accessCode);
     }
   }, [socket, session?.accessCode]);
