@@ -2,6 +2,15 @@
 
 Plateforme de quiz interactive permettant aux enseignants de créer des quiz et de lancer des sessions en temps réel, et aux étudiants de participer et de voir les résultats instantanément.
 
+## ✨ Fonctionnalités Principales
+
+- **Gestion de quiz** : Création, modification et suppression de quiz avec différents types de questions (QCM, Vrai/Faux, Texte libre)
+- **Sessions en temps réel** : Lancement de sessions avec code d'accès unique et gestion en direct via WebSocket
+- **Dashboard interactif** : Statistiques de performance, historique des sessions, vue d'ensemble pour enseignants et étudiants
+- **Récapitulatifs détaillés** : Consultation des résultats complets avec bonnes réponses et réponses des étudiants
+- **Authentification sécurisée** : JWT avec cookies httpOnly, gestion des rôles (Teacher/Student)
+- **Documentation API** : Documentation OpenAPI accessible via Swagger UI
+
 ## 🏗️ Architecture
 
 ### Structure Monorepo
@@ -128,6 +137,18 @@ Optionnel : Créez des données de test :
 pnpm db:seed
 ```
 
+**Comptes de test créés par la seed** :
+
+- **Teacher** : `teacher1@example.com` / `teacher123`
+  - A 2 quiz avec plusieurs questions
+  - Sessions actives et terminées disponibles
+  
+- **Student** : `student1@example.com` / `student123`
+  - A complété plusieurs sessions avec scores
+  - Peut tester toutes les fonctionnalités étudiant
+
+Ces comptes sont également utilisables via les boutons "Quick Login" sur la page d'accueil.
+
 ## 🛠️ Développement
 
 ### Lancer l'application complète
@@ -181,15 +202,29 @@ pnpm build:frontend # Build le frontend
 frontend/
 ├── app/                    # App Router Next.js
 │   ├── (auth)/            # Routes d'authentification
-│   ├── (teacher)/         # Routes enseignants
-│   ├── (student)/         # Routes étudiants
-│   └── api/               # API routes Next.js (si nécessaire)
+│   ├── dashboard/         # Dashboard avec Parallel Routes
+│   │   ├── @overview/    # Vue d'ensemble
+│   │   ├── @quizzes/     # Liste des quiz
+│   │   ├── @sessions/    # Liste des sessions
+│   │   ├── @performance/ # Statistiques de performance
+│   │   └── sessions/     # Détails des sessions
+│   ├── teacher/          # Routes enseignants
+│   │   └── quizzes/      # Gestion des quiz
+│   ├── student/          # Routes étudiants
+│   │   └── join/         # Rejoindre une session
+│   └── api/              # API routes Next.js (si nécessaire)
 ├── components/            # Composants React réutilisables
+│   ├── AuthGuard.tsx     # Protection des routes par rôle
+│   └── dashboard/        # Composants du dashboard
 ├── lib/                   # Utilitaires et configurations
-│   ├── api/              # Client API centralisé
+│   ├── api/              # Client API centralisé (Axios)
 │   ├── hooks/            # Hooks personnalisés
+│   │   ├── useAuthMutation.ts
+│   │   ├── useQuizzes.ts
+│   │   ├── useSessions.ts
+│   │   └── useWebSocket.ts
 │   └── store/            # Stores Zustand
-├── types/                 # Types TypeScript (importés de shared)
+│       └── authStore.ts  # Store d'authentification
 └── public/                # Assets statiques
 ```
 
@@ -199,17 +234,26 @@ frontend/
 backend/
 ├── src/
 │   ├── controllers/      # Contrôleurs (logique métier)
+│   │   ├── authController.ts
+│   │   ├── quizController.ts
+│   │   └── sessionController.ts
 │   ├── routes/           # Routes Express
+│   │   ├── auth.ts       # Routes d'authentification
+│   │   ├── quiz.ts       # Routes de gestion des quiz
+│   │   ├── session.ts    # Routes de gestion des sessions
+│   │   └── dashboard.ts  # Routes du dashboard
 │   ├── middleware/       # Middlewares (auth, validation, etc.)
+│   │   └── auth.ts       # Middleware d'authentification JWT
 │   ├── db/              # Configuration base de données
 │   │   ├── connection.ts # Pool de connexions PostgreSQL
 │   │   ├── migrate.ts    # Script de migration
-│   │   └── seed.ts       # Script de seed
+│   │   └── seed.ts       # Script de seed avec données de test
 │   ├── migrations/       # Fichiers SQL de migration
-│   ├── services/         # Services métier
 │   ├── socket/           # Gestion WebSocket
+│   │   ├── handlers.ts   # Gestionnaires d'événements Socket.io
+│   │   └── sessionManager.ts # Gestion des sessions en temps réel
 │   ├── utils/            # Utilitaires
-│   └── types/            # Types TypeScript (importés de shared)
+│   └── index.ts          # Point d'entrée du serveur
 └── tests/                # Tests
 ```
 
@@ -232,18 +276,37 @@ L'application utilise **Socket.io** pour la communication temps réel. Les fonct
 2. **Réception des réponses** : Les réponses des étudiants sont reçues en temps réel
 3. **Affichage des résultats** : Les résultats et le classement sont mis à jour en temps réel
 4. **Timer synchronisé** : Le timer de chaque question est géré côté serveur et synchronisé avec tous les clients
+5. **Affichage des bonnes réponses** : Quand le temps est écoulé ou que l'enseignant affiche les résultats, les étudiants voient la bonne réponse
+6. **Récapitulatif final** : À la fin du quiz, chaque étudiant reçoit un récapitulatif personnalisé avec toutes les questions, ses réponses et les bonnes réponses
 
 ### Gestion des Reconnexions
 
 Socket.io gère automatiquement les reconnexions. Si un étudiant se déconnecte, il peut se reconnecter à la session en cours (si elle est toujours active) et reprendre là où il s'est arrêté.
 
+### Événements WebSocket
+
+**Client → Server** :
+- `joinSession` - Rejoindre une session avec code d'accès
+- `answer` - Soumettre une réponse à une question
+- `leaveSession` - Quitter une session
+
+**Server → Client** :
+- `question` - Nouvelle question diffusée
+- `results` - Résultats et classement (inclut la bonne réponse)
+- `sessionStarted` - Notification de démarrage de session
+- `sessionEnded` - Notification de fin de session (inclut le récapitulatif complet)
+- `timerUpdate` - Mise à jour du timer
+- `error` - Message d'erreur
+
 ## 📚 API Documentation
 
 La documentation OpenAPI/Swagger est disponible dans le fichier `openapi.yaml` à la racine du projet.
 
-Pour accéder à la documentation interactive (si Swagger UI est configuré) :
+**Documentation interactive Swagger UI** :
 
 - URL: `http://localhost:3001/api-docs`
+- Accessible dès que le serveur backend est démarré
+- Permet de tester les endpoints directement depuis l'interface
 
 ## 🧪 Tests
 
@@ -299,23 +362,33 @@ Le frontend Next.js peut être déployé sur :
 ### Enseignant (Teacher)
 
 - Créer, modifier et supprimer des quiz
-- Créer des questions (QCM, Vrai/Faux, Texte libre)
+- Créer des questions (QCM, Vrai/Faux, Texte libre) avec points personnalisés
 - Lancer des sessions de quiz avec code d'accès
+- Contrôler la progression des questions (suivante, résultats, fin de session)
 - Visualiser les résultats et statistiques en temps réel
+- Consulter les résultats détaillés de chaque session (participants, scores, réponses)
+- Accéder aux statistiques de performance par quiz avec scores moyens et maximums
 
 ### Étudiant (Student)
 
 - Rejoindre une session via code d'accès
 - Répondre aux questions en temps réel
 - Visualiser les résultats et le classement
+- Voir les bonnes réponses après expiration du temps
+- Consulter le récapitulatif complet du quiz après la fin de la session
+- Accéder à l'historique des sessions depuis le dashboard
 
 ## 📝 Notes
 
 - Les mots de passe sont hashés avec bcryptjs
-- Les tokens JWT expirent après 7 jours
+- Les tokens JWT sont stockés dans des cookies httpOnly pour la sécurité
+- Les tokens expirent après 7 jours
+- Les cookies utilisent `sameSite: "lax"` en développement et `sameSite: "strict"` en production
 - Les sessions de quiz sont stockées en mémoire (pourrait être migré vers Redis en production)
 - Les migrations SQL sont gérées manuellement via le script `db:migrate`
 - Le projet utilise pnpm workspaces pour gérer les dépendances du monorepo
+- Les scores sont calculés en fonction des points attribués à chaque question
+- Les réponses sont stockées en base de données pour permettre la consultation des récapitulatifs après la session
 
 ## 🤝 Contribution
 
