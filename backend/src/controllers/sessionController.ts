@@ -256,3 +256,47 @@ export async function getSession(req: AuthRequest, res: Response) {
   }
 }
 
+/**
+ * GET /api/sessions/:sessionId/participants
+ * Get current session participants
+ */
+export async function getSessionParticipants(req: AuthRequest, res: Response) {
+  const { sessionId } = req.params;
+
+  try {
+    // Verify session exists and belongs to teacher
+    const sessionResult = await query(
+      `SELECT s.id, s.access_code, s.quiz_id, q.creator_id
+       FROM sessions s
+       INNER JOIN quizzes q ON s.quiz_id = q.id
+       WHERE s.id = $1 AND q.creator_id = $2`,
+      [sessionId, req.userId]
+    );
+
+    if (!sessionResult.rows.length) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    const session = sessionResult.rows[0];
+    const sessionState = getSessionState(session.access_code);
+
+    if (!sessionState) {
+      return res.status(200).json({ participants: [] });
+    }
+
+    // Build participants list with their current scores
+    const participants = Array.from(sessionState.participants.values()).map(
+      (p) => ({
+        userId: p.userId,
+        name: p.name,
+        score: p.score,
+      })
+    );
+
+    return res.status(200).json({ participants });
+  } catch (error) {
+    console.error("Get session participants error:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
