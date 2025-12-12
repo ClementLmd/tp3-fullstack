@@ -1,15 +1,19 @@
 openapi: 3.0.0
 info:
   title: Quiz Platform API
-  version: 1.0.0
-  description: API for real-time interactive quiz platform
+  version: 2.0.0
+  description: API for real-time interactive quiz platform with WebSocket support
 servers:
   - url: http://localhost:3001
     description: Development server
+  - url: https://api.quizplatform.com
+    description: Production server
 paths:
   /health:
     get:
-      summary: Health check
+      summary: Health check endpoint
+      tags:
+        - Health
       responses:
         '200':
           description: Server is healthy
@@ -22,9 +26,11 @@ paths:
                     type: string
                   message:
                     type: string
-  /api/auth/register:
+  /auth/signup:
     post:
       summary: Register a new user
+      tags:
+        - Authentication
       requestBody:
         required: true
         content:
@@ -40,8 +46,10 @@ paths:
               properties:
                 email:
                   type: string
+                  format: email
                 password:
                   type: string
+                  minLength: 6
                 firstName:
                   type: string
                 lastName:
@@ -52,11 +60,24 @@ paths:
       responses:
         '201':
           description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
         '400':
-          description: Bad request
-  /api/auth/login:
+          description: Bad request - missing or invalid fields
+        '409':
+          description: Email already exists
+  /auth/login:
     post:
       summary: Login user
+      tags:
+        - Authentication
       requestBody:
         required: true
         content:
@@ -69,13 +90,35 @@ paths:
               properties:
                 email:
                   type: string
+                  format: email
                 password:
                   type: string
       responses:
         '200':
           description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
         '401':
           description: Invalid credentials
+  /auth/logout:
+    post:
+      summary: Logout user
+      tags:
+        - Authentication
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+        '401':
+          description: Unauthorized
   /api/quizzes:
     get:
       summary: List all quizzes for the authenticated teacher
@@ -215,6 +258,214 @@ paths:
           description: Forbidden - Teacher role required
         '404':
           description: Quiz not found
+  /api/sessions:
+    post:
+      summary: Start a new quiz session
+      tags:
+        - Sessions
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quizId
+              properties:
+                quizId:
+                  type: string
+      responses:
+        '201':
+          description: Session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Teacher role required
+  /api/sessions/{sessionId}:
+    get:
+      summary: Get session details
+      tags:
+        - Sessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Session details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Session not found
+  /api/sessions/{sessionId}/next:
+    post:
+      summary: Move to next question in session
+      tags:
+        - Sessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Moved to next question
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Teacher role required
+        '404':
+          description: Session not found
+  /api/sessions/{sessionId}/results:
+    post:
+      summary: Show results for current question
+      tags:
+        - Sessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Results displayed
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Teacher role required
+        '404':
+          description: Session not found
+  /api/sessions/{sessionId}/end:
+    post:
+      summary: End the session
+      tags:
+        - Sessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Session ended
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Teacher role required
+        '404':
+          description: Session not found
+  /dashboard/stats:
+    get:
+      summary: Get user statistics
+      tags:
+        - Dashboard
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User statistics
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TeacherStats'
+                  - $ref: '#/components/schemas/StudentStats'
+        '401':
+          description: Unauthorized
+  /dashboard/quizzes:
+    get:
+      summary: Get quizzes for user
+      tags:
+        - Dashboard
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of quizzes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '401':
+          description: Unauthorized
+  /dashboard/sessions:
+    get:
+      summary: Get sessions for user
+      tags:
+        - Dashboard
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SessionSummary'
+        '401':
+          description: Unauthorized
+  /dashboard/quiz/{quizId}/details:
+    get:
+      summary: Get detailed statistics for a quiz
+      tags:
+        - Dashboard
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: quizId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Quiz details with statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  quiz:
+                    type: object
+                  topPerformers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Performer'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Teachers only
+        '404':
+          description: Quiz not found
 components:
   securitySchemes:
     bearerAuth:
@@ -328,5 +579,86 @@ components:
           type: number
           default: 1
         timeLimit:
+          type: number
+    Session:
+      type: object
+      properties:
+        id:
+          type: string
+        quizId:
+          type: string
+        accessCode:
+          type: string
+        isActive:
+          type: boolean
+        currentQuestionIndex:
+          type: number
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+    SessionSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        quizId:
+          type: string
+        quizTitle:
+          type: string
+        accessCode:
+          type: string
+        isActive:
+          type: boolean
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+        participantCount:
+          type: number
+        avgScore:
+          type: number
+    TeacherStats:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [TEACHER]
+        totalQuizzes:
+          type: number
+        totalSessions:
+          type: number
+        avgParticipants:
+          type: number
+        totalParticipants:
+          type: number
+    StudentStats:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [STUDENT]
+        totalParticipated:
+          type: number
+        avgScore:
+          type: number
+        totalScore:
+          type: number
+        highestScore:
+          type: number
+    Performer:
+      type: object
+      properties:
+        userId:
+          type: string
+        name:
+          type: string
+        score:
+          type: number
+        correctAnswers:
           type: number
 
